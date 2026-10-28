@@ -251,6 +251,14 @@
     .gal.strip .big{grid-column:span 2}
     .gal figcaption{font-size:12px;padding:22px 10px 8px}
   }
+  .gal-h span.mo{display:none}
+  @media (max-width:720px){
+    .gal:not(.strip){display:flex;overflow-x:auto;scroll-snap-type:x mandatory;gap:10px;margin:0 -24px;padding:0 24px 6px;scrollbar-width:none}
+    .gal:not(.strip)::-webkit-scrollbar{display:none}
+    .gal:not(.strip) figure{flex:0 0 78%;height:220px;scroll-snap-align:center}
+    .gal-h span.pc{display:none}
+    .gal-h span.mo{display:inline}
+  }
 </style>
 </head>
 <body>
@@ -315,19 +323,6 @@
         <li><b>면접마스터클래스</b> — 2분반, 분반당 60명</li>
         <li><b>디자인마이스쿨</b> — 신입생 진로탐색 프로그램 1~3차시 설계·운영, 전 교원 대상 운영 교육</li>
       </ul></div>
-
-      <div class="gal-h"><b>강의 현장</b><span>사진을 누르면 크게 볼 수 있어요</span></div>
-      <div class="gal">
-        <figure class="big"><img src="lec01.jpg" alt="미래산업 세미나 특강" loading="lazy"></figure>
-        <figure class="tall"><img src="lec02.jpg" alt="면접 마스터 클래스" loading="lazy" style="object-position:60% 40%"></figure>
-        <figure><img src="lec03.jpg" alt="소비자 심리와 행동 강의" loading="lazy" style="object-position:30% 50%"></figure>
-        <figure><img src="lec04.jpg" alt="1:1 진로·취업 상담" loading="lazy" style="object-position:45% 55%"></figure>
-        <figure class="wide"><img src="lec05.jpg" alt="홀랜드 직업흥미 이론 강의" loading="lazy" style="object-position:75% 45%"></figure>
-        <figure><img src="lec06.jpg" alt="소비자 구매행동 강의" loading="lazy" style="object-position:25% 50%"></figure>
-        <figure><img src="lec07.jpg" alt="실습형 특강" loading="lazy" style="object-position:45% 50%"></figure>
-        <figure class="wide"><img src="lec08.jpg" alt="단국대학교 강의" loading="lazy" style="object-position:55% 45%"></figure>
-        <figure class="wide"><img src="lec09.jpg" alt="단국대학교 강의" loading="lazy" style="object-position:55% 45%"></figure>
-      </div>
     </div>
   </section>
 
@@ -508,6 +503,19 @@
         <figure class="vq"><blockquote>“개인적으로 지금까지 대학교 4년 동안 다니면서 손에 꼽을 정도로 좋은 강의 중 하나였다고 생각합니다.”</blockquote><figcaption>면접마스터클래스 · 2025-2</figcaption></figure>
         <figure class="vq"><blockquote>“교수님이 현업에 계셨던 분이라 정말 이해도 잘 되고 재밌게 한 학기 동안 학습할 수 있었으며, 마케팅이라는 분야에 대해서 많은 흥미가 생겼습니다.”</blockquote><figcaption>마케팅신조류 · 2022-1</figcaption></figure>
         <figure class="vq"><blockquote>“학생 한 명 한 명 피드백을 해주시고 학생들을 생각하시는 게 진심으로 느껴져서 좋았다.”</blockquote><figcaption>면접마스터클래스 · 2025-1</figcaption></figure>
+      </div>
+
+      <div class="gal-h"><b>강의 현장</b><span class="pc">사진을 누르면 크게 볼 수 있어요</span><span class="mo">옆으로 넘겨 보세요 →</span></div>
+      <div class="gal">
+        <figure class="big"><img src="lec01.jpg" alt="미래산업 세미나 특강" loading="lazy"></figure>
+        <figure class="tall"><img src="lec02.jpg" alt="면접 마스터 클래스" loading="lazy" style="object-position:60% 40%"></figure>
+        <figure><img src="lec03.jpg" alt="소비자 심리와 행동 강의" loading="lazy" style="object-position:30% 50%"></figure>
+        <figure><img src="lec04.jpg" alt="1:1 진로·취업 상담" loading="lazy" style="object-position:45% 55%"></figure>
+        <figure class="wide"><img src="lec05.jpg" alt="홀랜드 직업흥미 이론 강의" loading="lazy" style="object-position:75% 45%"></figure>
+        <figure><img src="lec06.jpg" alt="소비자 구매행동 강의" loading="lazy" style="object-position:25% 50%"></figure>
+        <figure><img src="lec07.jpg" alt="실습형 특강" loading="lazy" style="object-position:45% 50%"></figure>
+        <figure class="wide"><img src="lec08.jpg" alt="단국대학교 강의" loading="lazy" style="object-position:55% 45%"></figure>
+        <figure class="wide"><img src="lec09.jpg" alt="단국대학교 강의" loading="lazy" style="object-position:55% 45%"></figure>
       </div>
     </div>
   </section>
