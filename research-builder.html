@@ -1,0 +1,754 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex, nofollow">
+<title>연구 설문 만들기 | 서베이 툴</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;700;900&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+<style>
+/* Layout: 왼쪽 연구정보 → 척도 라이브러리 → 설문 구성, 오른쪽 고정 패널(미리보기·코드북·링크). KCA 남색·연청, 변수명은 고정폭 */
+:root{
+  --ink:#17213a;--muted:#5b6580;--bg:#f5f7fb;--surface:#fff;--line:#dde3ef;
+  --navy:#0e2a6b;--soft:#dae3f3;--teal:#17414f;--red:#c00000;--on:#fff;
+  --font:"Noto Sans KR",system-ui,-apple-system,"Apple SD Gothic Neo","Malgun Gothic",sans-serif;
+  --mono:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;
+  color-scheme:light;
+}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
+  --ink:#e7ebf5;--muted:#a2abc2;--bg:#0f1424;--surface:#171e33;--line:#2a3452;--navy:#8fb0ff;--soft:#1f2a48;--teal:#9fd0dc;--red:#ff7b7b;--on:#0f1424;color-scheme:dark}}
+:root[data-theme="dark"]{--ink:#e7ebf5;--muted:#a2abc2;--bg:#0f1424;--surface:#171e33;--line:#2a3452;--navy:#8fb0ff;--soft:#1f2a48;--teal:#9fd0dc;--red:#ff7b7b;--on:#0f1424;color-scheme:dark}
+*{box-sizing:border-box}
+html,body{margin:0}
+body{background:var(--bg);color:var(--ink);font-family:var(--font);font-size:14.5px;line-height:1.55}
+header{background:var(--surface);border-bottom:1px solid var(--line)}
+.wrap{max-width:1280px;margin:0 auto;padding:0 20px}
+.top{display:flex;align-items:center;gap:12px;padding:16px 0}
+.mark{width:10px;height:36px;background:var(--navy);border-radius:2px}
+.top h1{font-size:19px;font-weight:900;margin:0;color:var(--navy)}
+.top p{margin:0;color:var(--muted);font-size:13px}
+.layout{display:grid;grid-template-columns:minmax(0,1.2fr) minmax(0,1fr);gap:20px;padding:20px 0 60px;align-items:start}
+@media (max-width:960px){.layout{grid-template-columns:1fr}}
+.side{position:sticky;top:12px;display:flex;flex-direction:column;gap:12px;max-height:calc(100vh - 24px)}
+@media (max-width:960px){.side{position:static;max-height:none}}
+.card{background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:16px}
+.stack{display:flex;flex-direction:column;gap:14px}
+.row{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+h2{font-size:15px;margin:0;color:var(--navy);display:flex;align-items:center;gap:8px}
+h2 .no{font-size:12px;font-weight:900;background:var(--navy);color:var(--on);border-radius:4px;padding:1px 7px;font-variant-numeric:tabular-nums}
+label{display:block;font-size:12.5px;font-weight:700;margin-bottom:3px}
+.hint{font-weight:400;color:var(--muted);font-size:12px}
+input,select,textarea{width:100%;font:inherit;color:var(--ink);background:var(--surface);border:1px solid var(--line);border-radius:7px;padding:7px 10px}
+textarea{resize:vertical;min-height:60px}
+input:focus,select:focus,textarea:focus{outline:2px solid var(--navy);outline-offset:0}
+input[type=checkbox]{width:16px;height:16px;padding:0;accent-color:var(--navy)}
+.g2{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.g3{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}
+@media (max-width:620px){.g2,.g3{grid-template-columns:1fr}}
+.btn{font:inherit;font-weight:700;cursor:pointer;border-radius:8px;padding:8px 14px;border:1px solid var(--navy);background:var(--navy);color:var(--on);text-decoration:none;display:inline-block}
+.btn.ghost{background:transparent;color:var(--navy)}
+.btn.sm{padding:4px 10px;font-size:12.5px}
+.btn:disabled{opacity:.45;cursor:default}
+.btn:focus-visible,.tabs button:focus-visible,.dom button:focus-visible{outline:2px solid var(--red);outline-offset:2px}
+.toggle{display:flex;gap:8px;align-items:center;font-size:13px;font-weight:500;margin:0}
+.dom{display:flex;gap:6px;flex-wrap:wrap}
+.dom button{all:unset;cursor:pointer;padding:6px 12px;border:1px solid var(--line);border-radius:999px;font-size:13px;font-weight:700;background:var(--bg)}
+.dom button.on{background:var(--navy);border-color:var(--navy);color:var(--on)}
+.lib{display:grid;grid-template-columns:repeat(2,1fr);gap:8px}
+@media (max-width:620px){.lib{grid-template-columns:1fr}}
+.con{border:1px solid var(--line);border-radius:8px;padding:10px 12px;display:flex;flex-direction:column;gap:4px;background:var(--surface)}
+.con .h{display:flex;justify-content:space-between;align-items:center;gap:6px}
+.con b{font-size:14px}
+.code{font-family:var(--mono);font-size:12px;font-weight:700;color:var(--navy);background:var(--soft);padding:1px 6px;border-radius:4px;white-space:nowrap}
+.con .ref{font-size:12px;color:var(--muted)}
+.con details{font-size:12.5px;color:var(--muted)}
+.con details summary{cursor:pointer}
+.con ol{margin:4px 0 0;padding-left:18px}
+.sec{border:1px solid var(--line);border-radius:10px;background:var(--surface);overflow:hidden}
+.sec-h{display:grid;grid-template-columns:auto 1fr auto;gap:10px;align-items:center;padding:10px 12px;background:var(--soft)}
+.sec-h .pn{font-weight:900;color:var(--navy);font-variant-numeric:tabular-nums}
+.sec-h input{background:var(--surface)}
+.sec-b{padding:10px 12px;display:flex;flex-direction:column;gap:8px}
+.it{display:grid;grid-template-columns:78px 1fr auto auto;gap:8px;align-items:center}
+.it .c{font-family:var(--mono);font-size:12px;font-weight:700;color:var(--navy);text-align:center;padding:6px 4px}
+.it.att .c{color:var(--red)}
+.rev{display:flex;gap:4px;align-items:center;font-size:12px;color:var(--muted);white-space:nowrap}
+.icon{all:unset;cursor:pointer;width:26px;height:26px;display:grid;place-items:center;border-radius:6px;color:var(--muted);font-size:13px}
+.icon:hover{background:var(--soft);color:var(--navy)}
+.icon:focus-visible{outline:2px solid var(--navy)}
+.icon:disabled{opacity:.3;cursor:default}
+.sec-o{display:flex;gap:14px;flex-wrap:wrap;align-items:center;font-size:12.5px;color:var(--muted)}
+.tabs{display:flex;gap:4px;background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:4px}
+.tabs button{all:unset;cursor:pointer;flex:1;text-align:center;padding:8px;border-radius:7px;font-weight:700;font-size:13.5px;color:var(--muted)}
+.tabs button.on{background:var(--navy);color:var(--on)}
+.pane{overflow-y:auto;min-height:0}
+.summary{display:flex;gap:14px;flex-wrap:wrap;font-size:12.5px;color:var(--muted)}
+.summary b{color:var(--ink);font-variant-numeric:tabular-nums}
+/* preview mirrors survey page */
+.pv{display:flex;flex-direction:column;gap:10px;background:#f2f5fa;padding:12px;border-radius:10px;color:#17213a}
+.pv .c{background:#fff;border:1px solid #d9e0ec;border-radius:10px;padding:14px;font-size:13.5px}
+.pv .cover{border-top:8px solid var(--pvc,#0e2a6b)}
+.pv .org{font-size:12px;font-weight:700;color:var(--pvc,#0e2a6b);margin:0 0 4px}
+.pv h3{margin:0 0 6px;font-size:18px;line-height:1.35}
+.pv .d{white-space:pre-wrap;color:#5b6580;margin:0}
+.pv .sb{background:var(--pvc,#0e2a6b);color:var(--pvon,#fff);border-radius:10px 10px 0 0;padding:9px 14px;font-weight:700;font-size:13.5px}
+.pv .sd{background:#fff;border:1px solid #d9e0ec;border-top:0;border-radius:0 0 10px 10px;padding:8px 14px;color:#5b6580;font-size:12.5px;margin-top:-10px}
+.pv .stim{background:var(--pvs,#dae3f3);border-left:5px solid var(--pvc,#0e2a6b);border-radius:8px;padding:10px 12px;white-space:pre-wrap}
+.pv .t{color:#17414f;font-weight:500;margin:0 0 8px}
+.pv .req{color:#c00000}
+.pv .sc{display:grid;grid-template-columns:repeat(7,1fr);gap:4px}
+.pv .sc span{border:1.5px solid #d9e0ec;border-radius:6px;text-align:center;font-weight:700;padding:4px 0;font-size:12px}
+.pv .ends{display:flex;justify-content:space-between;font-size:11px;color:#5b6580;margin-top:4px}
+.pv .op{border:1.5px solid #d9e0ec;border-radius:6px;padding:5px 10px;margin-bottom:4px;font-size:12.5px}
+.pv .ln{border-bottom:1px dotted #5b6580;height:18px}
+.pv .tag{font-family:var(--mono);font-size:10.5px;color:#0e2a6b;background:#dae3f3;border-radius:3px;padding:0 4px;margin-left:4px;vertical-align:1px}
+table{border-collapse:collapse;width:100%;font-size:12.5px}
+th,td{padding:6px 8px;border-bottom:1px solid var(--line);text-align:left;vertical-align:top}
+th{background:var(--navy);color:var(--on);white-space:nowrap;position:sticky;top:0}
+td.m{font-family:var(--mono);font-weight:700;color:var(--navy);white-space:nowrap}
+.scroll{overflow:auto}
+pre{margin:0;font-family:var(--mono);font-size:12px;line-height:1.5;white-space:pre;overflow:auto;background:var(--bg);border:1px solid var(--line);border-radius:8px;padding:12px;max-height:300px}
+ol.guide{margin:0;padding-left:20px;font-size:13.5px}
+ol.guide li{margin:5px 0}
+code{font-family:var(--mono);font-size:12.5px;background:var(--soft);padding:1px 5px;border-radius:4px}
+.out{color:var(--red);font-weight:700}
+.status{font-size:12.5px;color:var(--muted);min-height:1.3em}
+.status.err{color:var(--red)}
+.note{font-size:12.5px;color:var(--muted);background:var(--soft);border-radius:8px;padding:9px 12px}
+.design-box{display:flex;flex-direction:column;gap:10px;border:1px solid var(--line);border-radius:10px;padding:12px 14px;background:var(--bg)}
+.design-row{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+.dlabel{font-size:12.5px;font-weight:700;min-width:44px}
+.sw{display:flex;gap:6px;flex-wrap:wrap}
+.sw button{width:26px;height:26px;border-radius:50%;border:2px solid var(--surface);box-shadow:0 0 0 1px var(--line);cursor:pointer;padding:0}
+.sw button[aria-pressed="true"]{box-shadow:0 0 0 2px var(--ink)}
+.sw button:focus-visible{outline:2px solid var(--ink);outline-offset:2px}
+.dcustom{display:flex;align-items:center;gap:6px;font-size:12.5px;font-weight:500;margin:0;cursor:pointer}
+.dcustom input{width:30px;height:26px;padding:0;border:1px solid var(--line);border-radius:6px;background:none}
+#logoPv{height:28px;max-width:160px;object-fit:contain;background:#fff;border:1px solid var(--line);border-radius:6px;padding:3px 6px}
+@media (prefers-reduced-motion:reduce){*{transition:none!important}}
+[hidden]{display:none!important}
+.simg-ed{display:flex;gap:12px;align-items:center;flex-wrap:wrap}
+.simg-ed img{width:120px;max-height:120px;object-fit:contain;border:1px solid var(--line);border-radius:8px;background:#fff}
+.vwrap{position:relative;width:100%;aspect-ratio:16/9;border-radius:10px;overflow:hidden;background:#000;margin:0 0 12px}
+.vwrap iframe{position:absolute;inset:0;width:100%;height:100%;border:0}
+.vlink{display:inline-block;margin:0 0 12px;padding:10px 16px;border:1px solid var(--line);border-radius:10px;background:#fff;font-weight:600;text-decoration:none;color:var(--navy)}
+.pv-img{margin:8px 0;text-align:center}
+.pv-img img{max-width:100%;max-height:420px;border-radius:8px;border:1px solid var(--line)}
+.cdadd{border:1px dashed var(--line);border-radius:10px;padding:12px;display:flex;flex-direction:column;gap:8px;background:var(--bg)}
+.cdadd input,.cdadd select{font:inherit;font-size:14px}
+.cditem{border:1px solid var(--line);border-radius:10px;padding:10px 12px;display:flex;flex-direction:column;gap:6px;background:#fff}
+.cditem .top{display:flex;gap:8px;align-items:center}
+.cditem .top input[type=text]{flex:1;min-width:0}
+.cditem .opts{font-size:12.5px;color:var(--muted)}
+.cditem .x{border:0;background:none;color:var(--muted);font-size:18px;cursor:pointer;padding:0 4px}
+body,h1,h2,h3,p,label,legend,.t{word-break:keep-all;overflow-wrap:break-word}
+</style>
+</head>
+<body>
+<header><div class="wrap top" style="justify-content:space-between"><div class="row" style="gap:12px;flex-wrap:nowrap">
+  <div class="mark" aria-hidden="true"></div>
+  <div><h1>연구 설문 만들기</h1><p>척도를 골라 구성하면 동의서·변수명·코드북이 갖춰진 연구용 설문 링크가 나오고, 응답은 내 구글 시트에 쌓입니다</p></div>
+</div><a href="/builder" class="btn ghost sm" style="text-decoration:none;white-space:nowrap">← 서베이 툴</a>
+</div></header>
+
+<div class="wrap layout">
+<div class="stack">
+
+  <div class="card stack">
+    <div class="row" style="justify-content:space-between"><h2><span class="no">01</span>연구 정보 · 동의서</h2><button class="btn ghost sm" id="newStudy">새 연구로 비우기</button></div>
+    <div><label for="f_title">설문 제목</label><input id="f_title" placeholder="예: 온라인 쇼핑 이용 경험에 관한 설문"></div>
+    <div><label for="f_purpose">연구 목적 <span class="hint">동의서에 한 문장으로 들어갑니다</span></label><input id="f_purpose" placeholder="예: 서비스 품질이 고객만족과 재구매의도에 미치는 영향을 알아보기 위함입니다."></div>
+    <div class="g3">
+      <div><label for="f_pi">연구책임자</label><input id="f_pi"></div>
+      <div><label for="f_aff">소속</label><input id="f_aff"></div>
+      <div><label for="f_mail">문의 이메일</label><input id="f_mail"></div>
+    </div>
+    <div class="g3">
+      <div><label for="f_irb">IRB 승인번호 <span class="hint">선택</span></label><input id="f_irb" placeholder="예: DKU 2026-11-001"></div>
+      <div><label for="f_min">예상 소요(분)</label><input id="f_min" inputmode="numeric"></div>
+      <div><label for="f_reward">참여 보상 <span class="hint">선택</span></label><input id="f_reward" placeholder="예: 모바일 커피 쿠폰"></div>
+    </div>
+    <div><label for="f_target">조사 대상 표현 <span class="hint">문항의 {대상} 자리에 들어갑니다. 예: 이 서비스, 이 브랜드</span></label><input id="f_target" placeholder="비우면 ‘이 제품·서비스’"></div>
+    <div><label for="f_desc">첫 화면 안내문</label><textarea id="f_desc" rows="4"></textarea></div>
+    <div><label for="f_consent">연구 참여 동의서 <span class="hint">위 정보로 자동 작성되며, 직접 고치면 그대로 유지됩니다</span></label><textarea id="f_consent" rows="9"></textarea></div>
+      <div class="design-box">
+        <div class="design-row"><span class="dlabel">대표 색</span><div class="sw" id="swatches"></div><label class="dcustom" title="직접 고르기"><input type="color" id="thPick" aria-label="대표 색 직접 고르기"> 직접</label></div>
+        <div class="design-row"><span class="dlabel">로고</span><img id="logoPv" alt="현재 로고"><input type="file" id="logoFile" accept="image/png,image/jpeg,image/webp" hidden><button type="button" class="btn ghost sm" id="logoBtn">로고 올리기</button><button type="button" class="btn ghost sm" id="logoReset">기본 로고로</button></div>
+        <p class="hint" id="logoNote" style="margin:0">로고를 올리지 않으면 연구소 로고가 들어갑니다. 올린 로고는 <b>짧은 링크</b>로 만든 설문에 표시됩니다.</p>
+      </div>
+    <label class="toggle" for="f_useConsent"><input type="checkbox" id="f_useConsent" checked> 응답 전에 동의서를 보여주고 동의한 사람만 진행</label>
+  </div>
+
+  <div class="card stack">
+    <h2><span class="no">02</span>척도 라이브러리</h2>
+    <p class="hint" style="margin:-6px 0 0">구성개념을 추가하면 설문에 섹션 하나로 들어갑니다. 문항은 관련 연구를 참고해 쓴 번안 예시이므로, 원척도 문항과 번안 타당성은 논문 기준으로 확인해 주세요.</p>
+    <div class="dom" id="dom"></div>
+    <div class="lib" id="lib"></div>
+    <div class="row"><input id="customName" placeholder="직접 만들 구성개념 이름" style="flex:2;min-width:160px" aria-label="구성개념 이름"><input id="customCode" placeholder="변수명 (예: XYZ)" style="flex:1;min-width:110px;font-family:var(--mono)" aria-label="변수명 접두어"><button class="btn ghost sm" id="addCustom">빈 섹션 추가</button></div>
+  </div>
+
+  <div class="stack">
+    <div class="row" style="justify-content:space-between"><h2><span class="no">03</span>설문 구성</h2>
+      <label class="toggle" for="hideNames"><input type="checkbox" id="hideNames"> 응답자에게 구성개념 이름 숨기기 (PART 1, 2…로 표시)</label></div>
+    <div id="secs" class="stack"></div>
+    <div class="card stack">
+      <div class="row" style="justify-content:space-between"><b style="color:var(--navy)">주의 확인 문항</b>
+        <label class="toggle" for="attOn"><input type="checkbox" id="attOn" checked> 넣기</label></div>
+      <div class="g2">
+        <div><label for="attSec">넣을 섹션</label><select id="attSec"></select></div>
+        <div><label for="attText">문항</label><input id="attText" value="이 문항은 성실 응답 확인용입니다. ‘4’를 선택해 주세요."></div>
+      </div>
+      <p class="hint" style="margin:0">변수명 ATT1로 저장되고, 코드북에 정답(4)이 기록됩니다. 분석 전에 4가 아닌 응답을 걸러내세요.</p>
+    </div>
+    <div class="card stack">
+      <b style="color:var(--navy)">응답자 정보</b>
+      <div id="demo" class="g2"></div>
+      <div id="cdemo" class="stack" style="gap:8px"></div>
+      <div class="cdadd">
+        <b style="font-size:13.5px;color:var(--navy)">+ 응답자 정보 문항 추가</b>
+        <input id="cd_x" placeholder="문항 예: 운동 경력을 선택해 주세요." aria-label="추가할 문항">
+        <div class="row" style="gap:8px;flex-wrap:wrap">
+          <select id="cd_y" aria-label="응답 형식"><option value="choice">하나 고르기</option><option value="checkbox">여러 개 고르기</option><option value="text">직접 적기</option><option value="file">파일 첨부 (사진·한글·PDF)</option></select>
+          <input id="cd_o" placeholder="선택지를 쉼표로: 1년 미만, 1~3년, 3년 이상" aria-label="선택지" style="flex:1;min-width:200px">
+        </div>
+        <div class="row" style="gap:8px"><button class="btn sm" id="cd_add" type="button">문항 추가</button><span class="hint" id="cd_msg"></span></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<aside class="side">
+  <div class="tabs" role="tablist">
+    <button class="on" data-tab="pv" role="tab">미리보기</button>
+    <button data-tab="cb" role="tab">코드북</button>
+    <button data-tab="ln" role="tab">설문 링크</button>
+  </div>
+  <div class="card summary" id="summary"></div>
+  <div class="pane" id="pane-pv"><div class="pv" id="pv"></div></div>
+  <div class="pane" id="pane-cb" hidden>
+    <div class="card stack">
+      <div class="row" style="justify-content:space-between"><span class="hint">응답 시트의 열 이름이 이 변수명으로 들어가고, 시트에 ‘코드북’ 탭도 자동으로 생깁니다.</span><button class="btn ghost sm" id="copyCb">표 복사</button></div>
+      <span class="status" id="cbStatus"></span>
+      <div class="scroll"><table id="cb"></table></div>
+    </div>
+  </div>
+  <div class="pane" id="pane-ln" hidden>
+    <div class="stack">
+      <div class="card stack">
+        <div hidden><label for="endpoint">응답 수집 주소 <span class="hint">처음 한 번만 붙여 넣으면 이 브라우저가 기억합니다</span></label>
+          <input id="endpoint" placeholder="https://script.google.com/macros/s/…/exec"></div>
+        <div class="status" id="epStatus" hidden></div>
+        <div><label for="link">설문 링크</label><textarea id="link" readonly rows="3" style="font-family:var(--mono);font-size:12px"></textarea></div>
+        <div class="row"><button class="btn" id="copyLink">링크 복사</button><a class="btn ghost" id="openLink" href="#" target="_blank" rel="noopener">새 창에서 열어 보기</a><span class="status" id="linkStatus"></span></div>
+      </div>
+
+        <div class="card stack" id="shortBox" style="border-color:var(--navy)">
+          <div><label for="slug">짧은 링크 만들기 <span class="hint">영문 소문자·숫자·하이픈(-) 3~40자. 비우면 설문 ID로 만듭니다</span></label>
+            <div class="row" style="flex-wrap:nowrap"><span style="font-family:var(--mono);font-size:12.5px;color:var(--muted);white-space:nowrap">sabsci-lab.com/survey#</span><input id="slug" placeholder="예: delivery2026" autocomplete="off" style="font-family:var(--mono)"></div></div>
+          <div class="row"><button class="btn" id="mkShort">짧은 링크 만들기</button><span class="status" id="shortStatus"></span></div>
+          <div id="shortOut" hidden class="stack" style="gap:8px">
+            <input id="shortLink" readonly style="font-family:var(--mono);font-weight:700;color:var(--navy)">
+            <div class="row"><button class="btn sm" id="copyShort">짧은 링크 복사</button><a class="btn ghost sm" id="openShort" href="#" target="_blank" rel="noopener">열어 보기</a></div>
+            <div class="row" style="align-items:center;gap:14px;border-top:1px dashed var(--line);padding-top:10px;margin-top:4px">
+              <div id="qr" style="background:#fff;padding:10px;border-radius:8px;border:1px solid var(--line);line-height:0"></div>
+              <div class="stack" style="flex:1;min-width:160px;gap:8px"><b style="font-size:14px">설문 QR 코드</b><span class="hint" id="qrNote" style="margin:0">포스터·안내문·발표 자료에 넣어 쓰세요.</span><div class="row"><button class="btn sm" id="dlQR">QR 이미지 저장</button></div></div>
+            </div>
+            <div style="border-top:1px dashed var(--line);padding-top:10px;margin-top:4px"><label for="reportLink">결과 보고서 링크 <span class="hint">교수님만 보관하세요. 이 링크를 아는 사람은 결과를 볼 수 있습니다</span></label>
+              <input id="reportLink" readonly style="font-family:var(--mono);font-size:12px">
+              <div class="row" style="margin-top:6px"><button class="btn ghost sm" id="copyReport">보고서 링크 복사</button><a class="btn ghost sm" id="openReport" href="#" target="_blank" rel="noopener" style="text-decoration:none">보고서 열기</a></div></div>
+            <p class="hint" style="margin:0">짧은 링크를 만든 뒤 문항을 바꾸면 새 짧은 링크를 다시 만들어 주세요. 바뀐 설문의 응답은 시트의 새 탭에 따로 모입니다.</p>
+          </div>
+        </div>
+      <details class="card" id="setup" hidden>
+        <summary style="cursor:pointer;font-weight:700;color:var(--navy)">처음 한 번만: 응답 시트 연결하기</summary>
+        <ol class="guide" style="margin-top:10px">
+          <li>응답을 모을 <a href="https://sheets.new" target="_blank" rel="noopener">구글 스프레드시트를 새로 만듭니다</a>. 만족도 설문과 같은 시트를 써도 됩니다.</li>
+          <li>시트 메뉴 <b>확장 프로그램 → Apps Script</b>에 아래 코드를 붙여 넣고 저장합니다.</li>
+          <li><b>배포 → 새 배포 → 웹 앱</b>, <b>실행: 나</b>, <b>액세스: 모든 사용자</b>로 배포하고 권한을 허용합니다.</li>
+          <li>나온 <span class="out">웹 앱 URL</span>을 위 ‘응답 수집 주소’에 붙여 넣습니다.</li>
+          <li>홈페이지 저장소(sabsci-lab)에 <code>survey.html</code>을 한 번 올립니다.</li>
+        </ol>
+        <div class="row" style="margin:6px 0 8px"><button class="btn sm" id="copy">코드 복사</button><span class="status" id="copyStatus"></span></div>
+        <pre id="code" tabindex="0" aria-label="응답 수집 Apps Script 코드"></pre>
+        <div style="margin-top:10px"><label for="base">설문 페이지 주소</label><input id="base"></div>
+      </details>
+    </div>
+  </div>
+</aside>
+</div>
+
+<script>
+(function(){
+const $=s=>document.querySelector(s),$$=s=>Array.from(document.querySelectorAll(s));
+const esc=s=>String(s??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+const GAS="const HEADER_COLOR = '#DAE3F3';\nconst HEADER_FONT = '#0E2A6B';\nconst MAX_CELL = 5000;\nconst REG = '_설문목록';\nconst IMG = '_이미지';\n\nfunction doPost(e) {\n  const lock = LockService.getScriptLock();\n  lock.waitLock(20000);\n  try {\n    const data = JSON.parse(e.postData.contents);\n    if (data.hp) return json_({ ok: true });\n    if (data.action === 'register') return register_(data);\n    if (data.action === 'img') return saveImg_(data);\n    if (!data.id || !Array.isArray(data.headers) || !Array.isArray(data.answers)) {\n      return json_({ ok: false, error: 'bad_request' });\n    }\n\n    const ss = SpreadsheetApp.getActiveSpreadsheet();\n    const sid = String(data.id).replace(/[^\\w-]/g, '');\n    let sh = findTab_(ss, 'surveyId', sid);\n    const name = uniqueName_(ss, shortName_(sid, data.title));\n    const headers = ['응답 시각'].concat(data.headers.map(clean_));\n\n    if (!sh) {\n      sh = ss.insertSheet(name);\n      sh.addDeveloperMetadata('surveyId', sid);\n      sh.getRange(1, 1, 1, headers.length).setValues([headers])\n        .setFontWeight('bold').setBackground(HEADER_COLOR).setFontColor(HEADER_FONT).setWrap(true);\n      sh.setFrozenRows(1);\n      sh.setColumnWidth(1, 150);\n      if (Array.isArray(data.notes) && data.notes.length === data.headers.length) {\n        sh.getRange(1, 2, 1, data.notes.length).setNotes([data.notes.map(clean_)]);\n      }\n      if (Array.isArray(data.codebook) && data.codebook.length) {\n        let cb = findTab_(ss, 'surveyCodebook', sid);\n        if (!cb) {\n          cb = ss.insertSheet(uniqueName_(ss, name + ' 코드북'));\n          cb.addDeveloperMetadata('surveyCodebook', sid);\n        }\n        const cbHead = ['변수명', '섹션', '문항', '구성개념', '역문항', '비고', '응답 형식'];\n        const cbRows = data.codebook.map(function (r) {\n          const row = cbHead.map(function (_, i) { return clean_(r[i]); });\n          return row;\n        });\n        cb.clear();\n        cb.getRange(1, 1, 1, cbHead.length).setValues([cbHead])\n          .setFontWeight('bold').setBackground(HEADER_COLOR).setFontColor(HEADER_FONT);\n        cb.getRange(2, 1, cbRows.length, cbHead.length).setValues(cbRows);\n        cb.setFrozenRows(1);\n        cb.setColumnWidth(3, 420);\n      }\n      ss.getSheets().forEach(function (s) {\n        if (s.getSheetId() !== sh.getSheetId() && s.getLastRow() === 0 && !s.getFormUrl() && ss.getSheets().length > 1) ss.deleteSheet(s);\n      });\n    }\n\n    const row = [new Date()].concat(data.answers.map(function (v) {\n      if (Array.isArray(v)) v = v.join(', ');\n      if (typeof v === 'number') return v;\n      return clean_(v);\n    }));\n    sh.appendRow(row);\n    return json_({ ok: true });\n  } catch (err) {\n    return json_({ ok: false, error: String(err) });\n  } finally {\n    lock.releaseLock();\n  }\n}\n\nfunction doGet(e) {\n  if (e && e.parameter && e.parameter.admin) return admin_(e.parameter);\n  if (e && e.parameter && e.parameter.img) return getImg_(e.parameter.img);\n  if (e && e.parameter && e.parameter.report) return report_(e.parameter.report, e.parameter.key);\n  const id = e && e.parameter && e.parameter.id;\n  if (!id) return json_({ ok: true, service: 'survey-collector' });\n  const reg = SpreadsheetApp.getActiveSpreadsheet().getSheetByName(REG);\n  const f = reg && reg.getRange('A:A').createTextFinder(String(id).toLowerCase()).matchEntireCell(true).findNext();\n  if (!f) return json_({ ok: false, error: 'not_found' });\n  return json_({ ok: true, survey: JSON.parse(reg.getRange(f.getRow(), 2).getValue()) });\n}\n\nfunction register_(data) {\n  const slug = String(data.slug || '').toLowerCase();\n  if (!/^[a-z0-9][a-z0-9-]{2,39}$/.test(slug) || !data.survey) return json_({ ok: false, error: 'bad_slug' });\n  const json = JSON.stringify(data.survey);\n  if (json.length > 49000) return json_({ ok: false, error: 'too_long' });\n  const ss = SpreadsheetApp.getActiveSpreadsheet();\n  let reg = ss.getSheetByName(REG);\n  if (!reg) {\n    reg = ss.insertSheet(REG);\n    reg.appendRow(['짧은 이름', '설문 내용', '등록 시각']);\n    reg.hideSheet();\n  }\n  const f = reg.getRange('A:A').createTextFinder(slug).matchEntireCell(true).findNext();\n  if (f) return json_({ ok: false, error: 'taken' });\n  const state = data.bs ? JSON.stringify(data.bs) : '';\n  reg.appendRow([slug, json, new Date(), String(data.key || '').slice(0, 40), state.length < 49000 ? state : '']);\n  return json_({ ok: true });\n}\n\nfunction report_(slug, key) {\n  const ss = SpreadsheetApp.getActiveSpreadsheet();\n  const reg = ss.getSheetByName(REG);\n  const f = reg && reg.getRange('A:A').createTextFinder(String(slug).toLowerCase()).matchEntireCell(true).findNext();\n  if (!f) return json_({ ok: false, error: 'not_found' });\n  const saved = String(reg.getRange(f.getRow(), 4).getValue() || '');\n  if (!saved || saved !== String(key || '')) return json_({ ok: false, error: 'forbidden' });\n  const survey = JSON.parse(reg.getRange(f.getRow(), 2).getValue());\n  const sh = findTab_(ss, 'surveyId', String(survey.id).replace(/[^\\w-]/g, ''));\n  if (!sh || sh.getLastRow() < 1) return json_({ ok: true, survey: survey, headers: [], rows: [] });\n  const vals = sh.getDataRange().getValues();\n  const rows = vals.slice(1).map(function (r) {\n    return r.map(function (v) { return v instanceof Date ? v.toISOString() : v; });\n  });\n  return json_({ ok: true, survey: survey, headers: vals[0], rows: rows });\n}\n\n// 내 설문함: 관리자 비밀번호는 브라우저에서 해시로 바꿔 보내고, 해시만 저장합니다\nfunction admin_(p) {\n  const props = PropertiesService.getScriptProperties();\n  const saved = props.getProperty('ADMIN_HASH');\n  const h = String(p.h || '');\n  if (p.admin === 'status') return json_({ ok: true, hasPw: !!saved });\n  if (p.admin === 'setpw') {\n    if (saved) return json_({ ok: false, error: 'already_set' });\n    if (!/^[0-9a-f]{64}$/.test(h)) return json_({ ok: false, error: 'bad_hash' });\n    props.setProperty('ADMIN_HASH', h);\n    return json_({ ok: true });\n  }\n  if (!saved || h !== saved) return json_({ ok: false, error: 'forbidden' });\n  const ss = SpreadsheetApp.getActiveSpreadsheet();\n  const reg = ss.getSheetByName(REG);\n  if (!reg || reg.getLastRow() < 2) return json_({ ok: true, items: [] });\n  const vals = reg.getRange(2, 1, reg.getLastRow() - 1, Math.max(5, reg.getLastColumn())).getValues();\n  if (p.admin === 'list') {\n    const items = vals.map(function (r) {\n      let sv = {};\n      try { sv = JSON.parse(r[1]); } catch (err) {}\n      const sh = sv.id ? findTab_(ss, 'surveyId', String(sv.id).replace(/[^\\w-]/g, '')) : null;\n      return {\n        slug: r[0], title: sv.t || '', org: sv.o || '', kind: sv.m === 'r' ? 'research' : 'customer',\n        created: r[2] instanceof Date ? r[2].toISOString() : String(r[2] || ''),\n        key: String(r[3] || ''), hasState: !!r[4],\n        responses: sh ? Math.max(0, sh.getLastRow() - 1) : 0, tab: sh ? sh.getName() : '',\n        th: sv.th || ''\n      };\n    }).reverse();\n    return json_({ ok: true, items: items });\n  }\n  if (p.admin === 'delete') {\n    const slug = String(p.slug || '').toLowerCase();\n    for (let i = 0; i < vals.length; i++) {\n      if (String(vals[i][0]) === slug) { reg.deleteRow(i + 2); return json_({ ok: true }); }\n    }\n    return json_({ ok: false, error: 'not_found' });\n  }\n  if (p.admin === 'state') {\n    const slug = String(p.slug || '').toLowerCase();\n    for (let i = 0; i < vals.length; i++) {\n      if (String(vals[i][0]) === slug) {\n        let sv = {}, st = null;\n        try { sv = JSON.parse(vals[i][1]); } catch (err) {}\n        try { st = vals[i][4] ? JSON.parse(vals[i][4]) : null; } catch (err) {}\n        return json_({ ok: true, survey: sv, state: st });\n      }\n    }\n    return json_({ ok: false, error: 'not_found' });\n  }\n  return json_({ ok: false, error: 'bad_request' });\n}\n\nfunction shortName_(sid, title) {\n  let t = String(title || '설문').replace(/[\\[\\]\\*\\?\\/\\\\:]/g, ' ').replace(/\\s+/g, ' ').trim();\n  t = t.replace(/(에 관한|에 대한)?\\s*(설문 조사|설문조사|설문|조사)$/, '').trim() || '설문';\n  if (t.length > 12) t = t.slice(0, 12).trim() + '…';\n  return t + ' ' + sid.slice(-4);\n}\n\nfunction uniqueName_(ss, base) {\n  let n = base, i = 2;\n  while (ss.getSheetByName(n)) n = base + ' (' + (i++) + ')';\n  return n;\n}\n\nfunction findTab_(ss, key, value) {\n  const found = ss.createDeveloperMetadataFinder().withKey(key).withValue(value).find();\n  for (let i = 0; i < found.length; i++) {\n    const sh = found[i].getLocation().getSheet();\n    if (sh) return sh;\n  }\n  return null;\n}\n\nfunction clean_(v) {\n  let s = String(v == null ? '' : v).slice(0, MAX_CELL);\n  if (/^[=+\\-@]/.test(s)) s = \"'\" + s;\n  return s;\n}\n\nfunction json_(o) {\n  return ContentService.createTextOutput(JSON.stringify(o)).setMimeType(ContentService.MimeType.JSON);\n}\n\nfunction saveImg_(data) {\n  const id = String(data.id || '');\n  const d = String(data.data || '');\n  if (!/^[a-z0-9]{8,24}$/.test(id) || !/^data:image\\/(jpeg|png|webp);base64,/.test(d) || d.length > 900000) return json_({ ok: false, error: 'bad_image' });\n  const ss = SpreadsheetApp.getActiveSpreadsheet();\n  let sh = ss.getSheetByName(IMG);\n  if (!sh) { sh = ss.insertSheet(IMG); sh.appendRow(['이미지 ID', '올린 시각', '내용(나눠 저장)']); sh.hideSheet(); }\n  if (sh.getRange('A:A').createTextFinder(id).matchEntireCell(true).findNext()) return json_({ ok: true });\n  const parts = [];\n  for (let i = 0; i < d.length; i += 45000) parts.push(d.slice(i, i + 45000));\n  sh.appendRow([id, new Date()].concat(parts));\n  return json_({ ok: true });\n}\n\nfunction getImg_(id) {\n  const sh = SpreadsheetApp.getActiveSpreadsheet().getSheetByName(IMG);\n  const f = sh && sh.getRange('A:A').createTextFinder(String(id)).matchEntireCell(true).findNext();\n  if (!f) return json_({ ok: false, error: 'not_found' });\n  const row = sh.getRange(f.getRow(), 3, 1, Math.max(1, sh.getLastColumn() - 2)).getValues()[0];\n  return json_({ ok: true, data: row.join('') });\n}\n";
+const BASE_DEFAULT="https://sabsci-lab.com/survey";
+const mem={get(k){try{return localStorage.getItem(k)||""}catch(e){return ""}},set(k,v){try{localStorage.setItem(k,v)}catch(e){}}};
+
+/* ---------- scale library (번안 예시) ---------- */
+const DOMAINS=[
+ {k:"mine",n:"내 논문 척도",c:[
+  {code:"JIS",n:"직업정보탐색",ref:"이시내·민동원(2026) 한국진로창업경영학회지 · Blau(1993, 1994) 수정",items:["희망하는 직업에 종사하거나 종사했던 사람(들)과 이야기를 나누고 조언을 구하려고 노력해왔다.","온라인을 통해 내가 원하는 직무나 취업에 대한 진로정보를 얻으려고 노력해왔다.","가고 싶은 기업에서 발행하는 정보나 기사, 홍보물 등을 읽고 자료를 수집하려고 노력해왔다.","취업박람회 등 취업 관련 행사나 프로그램에 참여하려고 노력해왔다.","하고 싶은 일과 관련된 자격증·기술을 취득하거나 교육을 받으려 노력해왔다."]},
+  {code:"JPP",n:"취업준비수행",ref:"이시내·민동원(2026) 한국진로창업경영학회지 · Blau(1993, 1994) 수정",items:["나는 교내 취업정보시스템(영웅스토리)을 통해 취업정보 탐색을 하는 편이다.","나는 교내 시스템 이외의 채용플랫폼(예: 잡코리아, 사람인, 자소설닷컴 등)을 통해 취업정보 탐색을 하는 편이다.","나는 현재 학교 내의 취업 관련 프로그램(예: 재맞고 빌드업, 현장실습, 취업 교과, 상담)을 통해 취업준비를 하고 있는 편이다.","나는 현재 학교 외에서 진행하는 프로그램(예: 삼성 청년 SW아카데미, LG 에이머스 등)을 통해 취업준비를 하고 있다.","나는 내 스스로 본격적인 취업준비(자격증 취득, 어학점수 획득 등 취업에 요구되는 자격을 갖추는 준비)를 하고 있다고 생각한다."]},
+  {code:"PINN",n:"지각된 혁신성 (의미차별)",ref:"Heo & Lee(2025) JTAER · Sethi et al.(2001) · 영문 문항 번역",items:[{t:"{대상}은(는) 어떻게 느껴지십니까?",l:["예측 가능하다","새롭다"]},{t:"{대상}은(는) 어떻게 느껴지십니까?",l:["평범하다","독창적이다"]},{t:"{대상}은(는) 어떻게 느껴지십니까?",l:["유용하다","쓸모없다"],r:1},{t:"{대상}은(는) 어떻게 느껴지십니까?",l:["적절하다","부적절하다"],r:1}]},
+  {code:"NIS",n:"정보탐색 욕구",ref:"Heo & Lee(2025) JTAER · Lee et al. · 논문 수록 4문항(원척도 6문항) 번역",items:["{대상}을(를) 보고 더 많은 정보를 찾아보려고 했다.","{대상}에 대한 정보를 더 얻고 싶다.","다른 사람과의 대화에서 {대상}이(가) 언급되면, 더 많은 정보를 얻기 위해 귀 기울일 것이다.","H&B 스토어(올리브영 등)나 매장에 가면 직원에게 {대상}에 대한 정보를 확인하거나 직접 사용해 볼 의향이 있다."]},
+  {code:"ATT",n:"제품 태도",ref:"이시내·민동원(2023) 무역연구; Lee & Min(2023) AMJ; Heo & Lee(2025) · 안아림·민동원(2016)",items:["나는 {대상}에 대하여 긍정적이다.","나는 {대상}에 대하여 호의적이다.","나는 {대상}이(가) 좋다."]},
+  {code:"CUR",n:"지각된 호기심",ref:"이시내·민동원(2023) 무역연구 · Stell & Paden(1999)",items:["나는 {대상}을(를) 보고 관련 제품 정보에 대하여 추가적으로 알고 싶어졌다.","나는 {대상}을(를) 보고 제품에 관한 추가적인 정보 탐색을 하고 싶어졌다.","나는 {대상}을(를) 보고 흥미로움이 유발되었다."]},
+  {code:"AWR",n:"브랜드 인지도",ref:"이시내·민동원(2023) 무역연구; 이시내·민동원(2017) 디지털융복합연구 · Yoo & Donthu(2001)",items:["나는 {대상}의 브랜드명을 들어본 적이 있다.","나는 {대상}을(를) 알고 있다."]},
+  {code:"FAIR",n:"프로모션 공정성 지각 (의미차별)",ref:"이시내·민동원(2023) 인문사회21 · Habel et al.(2016); Chiang & Jang(2007)",items:[{t:"내가 참여한 프로모션에 대하여 생각해 보았을 때 나와 참여 기업의 관계는",l:["불공정하였다","공정하였다"]},{t:"내가 참여한 프로모션은 전반적으로",l:["부적절하다","적절하다"]},{t:"내가 참여한 프로모션에 대해 지금 생각해 보니",l:["비합리적이다","합리적이다"]},{t:"내가 참여한 프로모션에서 나의 시간 할애는",l:["적당하다","적당하지 않다"],r:1},{t:"내가 참여한 프로모션에서 나의 시간 할애는",l:["수용 가능하지 않다","수용 가능하다"]}]},
+  {code:"AUTH",n:"진정성 지각",ref:"이시내·민동원(2023) 인문사회21 · 김상희(2010); Beverland(2005); Harter(2002)",items:["나는 해당 프로모션의 시작부터 종료까지 진정성을 느꼈다.","나는 해당 프로모션이 진심에서 우러나온 노력을 하고 있다고 생각됐다.","해당 기업은 내면에서 우러나온 거래 서비스를 제공하였다는 생각이 든다.","해당 기업과의 상호작용은 시작에서부터 끝까지 인간적인 느낌이 들었다.","해당 기업은 일반적 수준 이상의 서비스를 제공하고 있는 것 같다."]},
+  {code:"PATT",n:"프로모션 태도 (의미차별)",ref:"이시내·민동원(2023) 인문사회21 · 안아림·민동원(2013)",items:[{t:"해당 프로모션은",l:["나쁘다","좋다"]},{t:"해당 프로모션은",l:["부정적이다","긍정적이다"]},{t:"해당 프로모션은",l:["비호의적이다","호의적이다"]}]},
+  {code:"WOMI",n:"구전의도",ref:"이시내·민동원(2023) 인문사회21; 이시내·민동원(2016) 경영학연구 · Harrison-Walker(2001)",items:["나는 {대상}을(를) 다른 사람들에게 자주 언급할 것 같다.","나는 {대상}을(를) 타인들에게 다른 브랜드보다 많이 이야기할 것이다.","나는 다른 사람들에게 {대상}에 대해 말할 기회가 있다면, 꼭 말할 것 같다.","나는 다른 사람들에게 {대상}에 대해 말할 때, 주로 좋은 점을 말할 것 같다."]},
+  {code:"ISL",n:"정보탐색 수준",ref:"Lee & Min(2023) Asia Marketing Journal · Lee et al.(2020) · 영문 문항 번역",items:[{t:"{대상}에 대한 정보를 얻기 위해 기업이 제공하는 제품 사양(상세 정보)을 얼마나 탐색하셨습니까?",l:["전혀 하지 않았다","매우 많이 했다"]},{t:"{대상}에 대한 정보를 얻기 위해 다른 소비자가 올린 온라인 후기를 얼마나 탐색하셨습니까?",l:["전혀 하지 않았다","매우 많이 했다"]},{t:"{대상}에 대한 정보를 얻기 위해 뉴스 등 비교적 중립적인 온라인 자료를 얼마나 탐색하셨습니까?",l:["전혀 하지 않았다","매우 많이 했다"]}]},
+  {code:"CEXP",n:"마케팅 캠페인 노출 빈도",ref:"Lee & Min(2023) AMJ; Heo & Lee(2025) JTAER · 캠페인 채널은 연구에 맞게 수정",items:[{t:"다음 {대상} 캠페인을 얼마나 자주 접하셨습니까? — TV 프로그램 속 PPL",l:["전혀 본 적 없다","매우 자주 봤다"]},{t:"다음 {대상} 캠페인을 얼마나 자주 접하셨습니까? — 홈쇼핑 방송",l:["전혀 본 적 없다","매우 자주 봤다"]},{t:"다음 {대상} 캠페인을 얼마나 자주 접하셨습니까? — 유튜브 광고",l:["전혀 본 적 없다","매우 자주 봤다"]},{t:"다음 {대상} 캠페인을 얼마나 자주 접하셨습니까? — 인스타그램 광고·인플루언서 후기",l:["전혀 본 적 없다","매우 자주 봤다"]},{t:"다음 {대상} 캠페인을 얼마나 자주 접하셨습니까? — 카카오톡 등 모바일 프로모션 메시지",l:["전혀 본 적 없다","매우 자주 봤다"]},{t:"다음 {대상} 캠페인을 얼마나 자주 접하셨습니까? — 공식 온라인몰·매장 프로모션",l:["전혀 본 적 없다","매우 자주 봤다"]}]},
+  {code:"CAGE",n:"인지 연령 (숫자 응답)",ref:"Lee & Min(2023) AMJ · Barak & Schiffman(1981) 등 · 영문 문항 번역. 차이 연령 = 실제 나이 − 네 문항 평균",items:[{t:"나는 ___살처럼 느낀다. (숫자로 적어 주세요)",y:"text"},{t:"나는 ___살처럼 보인다. (숫자로 적어 주세요)",y:"text"},{t:"나는 ___살처럼 행동한다. (숫자로 적어 주세요)",y:"text"},{t:"나의 관심사는 대부분 ___살인 사람의 관심사와 같다. (숫자로 적어 주세요)",y:"text"}]},
+  {code:"SC",n:"사회적 연결감",ref:"이시내·민동원(2021) 정보통신정책연구; Lee & Min(2022) Behavioral Sciences · Lee & Robbins(1995)",items:["나는 주변 사람들과 관계가 원활한 편이다.","나는 주위 사람들과 하나 된 느낌을 받을 때가 많다.",{t:"나는 사람들과 지낼 때 뭔가 거리감을 느끼는 편이다.",r:1},"나는 친구들과 있을 때 함께라는 생각이 든다.",{t:"나는 내 주변 사람들과 연결되어 있다는 느낌이 들지 않는다.",r:1},"나는 내 친구들을 형제나 자매처럼 느낀다.","나는 친구들이나 많은 그룹에 속한 사람 같다.","나는 사람들과 네트워크가 좋은 편이다."]},
+  {code:"EMP",n:"광고 공감",ref:"이시내·민동원(2021) 정보통신정책연구 · Escalas & Stern(2003); 변예경·윤각·조재수(2017)",items:["나는 이 광고 문제가 마치 내 문제인 것처럼 느껴졌다.","나는 이 광고를 볼 때 별 탈 없이 마음을 열 수 있었다.","나에게 이 광고는 먼 느낌보다 가까운 느낌으로 다가온다.","이 광고에 대하여 만족한다."]},
+  {code:"CPI",n:"캠페인 참여의도",ref:"이시내·민동원(2021) 정보통신정책연구; Lee & Min(2022) · 영문 문항 번역",items:[{t:"나는 이 캠페인에 참여하고 싶다.",l:["전혀 참여해 보고 싶지 않다","매우 참여해 보고 싶다"]},{t:"나는 이 캠페인 활동(예: 소등 캠페인)에 참여하고 싶다.",l:["전혀 참여해 보고 싶지 않다","매우 참여해 보고 싶다"]}]},
+  {code:"ECO",n:"친환경 상품 구매의도",ref:"이시내·민동원(2021) 정보통신정책연구; Lee & Min(2022)",items:[{t:"이 친환경 상품을 얼마나 구매하고 싶으십니까?",l:["전혀 구매하고 싶지 않다","매우 구매하고 싶다"]}]},
+  {code:"WARM",n:"따뜻함 조작점검 (의미차별)",ref:"이시내·민동원(2021) 정보통신정책연구; Lee & Min(2022) · 영문 형용사 번역",items:[{t:"방금 읽은 묘사는 어떤 느낌이었습니까?",l:["까다롭다","온화하다"]},{t:"방금 읽은 묘사는 어떤 느낌이었습니까?",l:["예민하다","평화롭다"]},{t:"방금 읽은 묘사는 어떤 느낌이었습니까?",l:["낯설다","친숙하다"]}]},
+  {code:"CTRL",n:"실험 통제 (기분·체감 온도)",ref:"Lee & Min(2022) Behavioral Sciences · 영문 문항 번역",items:[{t:"지금 기분은 어떠십니까?",l:["좋지 않다","매우 좋다"]},{t:"지금 이 공간의 온도는 어떻게 느껴지십니까?",l:["시원하다","따뜻하다"]}]},
+  {code:"THIR",n:"갈증 조작점검",ref:"이시내·민동원(2021) 디지털융복합연구; 이시내·민동원(2022) 인문사회21 · Shalev(2014)",items:["지금 갈증이 느껴진다.","지금 무언가를 마시고 싶다."]},
+  {code:"SCB",n:"자기통제",ref:"이시내·민동원(2021) 디지털융복합연구 17문항(14~17번은 Grasmick et al.(1993), 이시내·민동원(2022)에서 사용) · 역문항 여부는 원척도 기준 확인",items:["나는 유혹에 잘 빠지지 않는다.","나는 나쁜 습관을 끊기가 어렵다.","나는 게으르다.","나는 집중하기가 어렵다.","나는 재미있으면 나에게 해로운 일도 한다.","나에게 좀 더 자제력이 있었으면 좋겠다.","나는 즐겁고 재미있는 것을 하느라 종종 일을 제때 끝내지 못한다.","나는 상황에 적절하지 않은 말을 한다.","나는 장기적인 목표를 향해 효율적으로 일을 진행할 수 있다.","나는 잘못인 줄 알면서도 스스로 그것을 멈추지 못한다.","나는 종종 모든 가능성을 고려해 보지 않고 행동한다.","나는 해가 될 만한 것을 거절한다.","나는 충동적인 사람이라고 생각한다.","나는 어려울 것이라 생각되는 과제를 피하려고 한다.","나는 어떤 것이 복잡해지면 끝내거나 버리려는 경향이 있다.","내 인생에서 가장 큰 기쁨을 가져오는 것들은 가장 쉬운 것들이다.","나는 내 능력의 한계에 다다르게 만드는 힘든 일들을 정말 싫어한다."]},
+  {code:"VIT",n:"지각된 에너지 (주관적 활력)",ref:"이시내·민동원(2022) 인문사회21 · Ryan & Frederick(1997) SVS · 영문 문항 번역",items:["나는 살아 있고 생기가 넘친다고 느낀다.","나는 에너지와 의욕이 있다.",{t:"나는 그다지 활기차지 않다고 느낀다.",r:1},"나는 정신이 맑고 깨어 있다고 느낀다.","나는 매일 새로운 하루가 기대된다.","나는 힘이 넘친다고 느낀다.","때로는 너무 생기가 넘쳐서 터질 것 같다."]},
+  {code:"PBA",n:"지각된 브랜드 진정성",ref:"이시내·민동원(2016) 경영학연구; 이시내·민동원(2017) 디지털융복합연구 · Morhart et al.(2015) · 기대실현(1~2)·지속성(3~6)·진실성(7~10)·상징성(11~14)",items:["{대상}은(는) 소비자와 약속한 가치를 실현시킬 것 같습니까?","{대상}은(는) 당신의 믿음에 보답할 것이라고 생각하십니까?","{대상}은(는) 역사가 있는 브랜드인 것 같습니까?","{대상}은(는) 쇼핑할 때 늘 만날 수 있을 것 같습니까?","{대상}은(는) 시장에서 잘 살아남을 브랜드라고 보여집니까?","{대상}은(는) 트렌드 변화와 무관하게 계속 남을 것 같습니까?","{대상}은(는) 소비자의 선택에 적절히 보답할 브랜드로 보입니까?","{대상}은(는) 나름의 윤리적 원칙이 있다고 생각하십니까?","{대상}의 윤리적 가치가 진실되게 느껴지십니까?","{대상}은(는) 소비자를 잘 배려하고 있다고 생각하십니까?","{대상}은(는) 사람들이 중요하게 생각하는 가치들을 반영하고 있다고 보십니까?","{대상}은(는) 사람들의 삶에 특별한 의미를 더해 줄 것이라고 생각하십니까?","{대상}은(는) 사람들이 진짜 자신의 모습이라고 생각하는 자아를 잘 반영해 줄 수 있는 브랜드라고 생각하십니까?","{대상}은(는) 사람들이 진짜로 중요하다고 생각하는 가치들과 관련되어 있다고 생각하십니까?"]},
+  {code:"EFS",n:"노력 절감",ref:"이시내·민동원(2016) 경영학연구 · Dixon et al.(2010)",items:["내가 앞으로 화장품을 구매할 때 {대상}을(를) 선택하면 화장품 구매에 걸리는 시간이 줄어들 것 같다.","내가 앞으로 화장품을 구매할 때 {대상}을(를) 선택하면 화장품 구매에 지출할 돈을 절약할 수 있을 것 같다.","내가 앞으로 화장품을 구매할 때 {대상}을(를) 선택하면 화장품 구매에 걸리는 고민이 줄어들 것 같다."]},
+  {code:"BTR",n:"브랜드 신뢰",ref:"이시내·민동원(2016) 경영학연구 · Chaudhuri & Holbrook(2001)",items:["{대상}은(는) 믿을 만한 제품일 것 같다.","{대상}은(는) 정직한 브랜드일 것 같다.","{대상}의 제품은 안전할 것 같다.","{대상}에 신뢰가 느껴진다."]},
+  {code:"PIN",n:"구매의도 (단일 문항)",ref:"이시내·민동원(2016) 경영학연구; 이시내·민동원(2017) 디지털융복합연구 · Lee & Min(2010)",items:["얼마나 {대상}의 제품을 구매하고 싶습니까?"]}
+ ]},
+ {k:"cons",n:"소비자 행동",c:[
+  {code:"SAT",n:"고객만족",ref:"Oliver(1980) 등",items:["전반적으로 {대상}에 만족한다.","{대상}을(를) 선택한 것은 현명한 결정이었다.","{대상}은(는) 나의 기대를 충족시켰다.","{대상}을(를) 이용한 경험은 즐거웠다."]},
+  {code:"PI",n:"구매의도",ref:"Dodds, Monroe & Grewal(1991) 등",items:["나는 {대상}을(를) 구매할 의향이 있다.","가까운 시일 안에 {대상}을(를) 구매할 가능성이 높다.","{대상}의 구매를 긍정적으로 고려하겠다."]},
+  {code:"RPI",n:"재구매의도",ref:"Hellier et al.(2003) 등",items:["앞으로도 {대상}을(를) 다시 이용할 것이다.","비슷한 것이 필요하면 {대상}을(를) 우선 고려할 것이다.","{대상}을(를) 계속 이용할 의향이 있다."]},
+  {code:"WOM",n:"구전·추천의도",ref:"Zeithaml, Berry & Parasuraman(1996) 등",items:["다른 사람에게 {대상}에 대해 긍정적으로 이야기할 것이다.","누군가 조언을 구하면 {대상}을(를) 추천할 것이다.","주변 사람들에게 {대상}을(를) 이용해 보라고 권할 것이다."]},
+  {code:"TRU",n:"신뢰",ref:"Morgan & Hunt(1994) 등",items:["{대상}은(는) 믿을 수 있다.","{대상}은(는) 약속한 것을 지킨다.","{대상}은(는) 정직하다.","{대상}은(는) 소비자의 이익을 고려한다."]},
+  {code:"PV",n:"지각된 가치",ref:"Sweeney & Soutar(2001) 등",items:["{대상}은(는) 가격에 비해 가치가 있다.","{대상}은(는) 지불한 비용만큼의 효용을 준다.","{대상}은(는) 경제적인 선택이다."]},
+  {code:"PR",n:"지각된 위험",ref:"Jacoby & Kaplan(1972) 등",items:["{대상}을(를) 구매하는 것은 위험하다고 느낀다.","{대상}이(가) 기대만큼의 성능을 내지 못할까 걱정된다.","{대상}을(를) 구매하면 돈을 낭비할 수도 있다."]},
+  {code:"PBC",n:"지각된 통제감",ref:"Ajzen(1991) 등",items:["나는 {대상}의 이용 과정을 스스로 조절할 수 있다.","{대상}을(를) 이용할 때 원하는 대로 선택할 수 있다.","{대상}의 이용 여부는 전적으로 나에게 달려 있다."]},
+  {code:"PO",n:"심리적 소유감",ref:"Van Dyne & Pierce(2004); Peck & Shu(2009) 등",items:["{대상}이(가) 나의 것처럼 느껴진다.","{대상}에 대해 개인적인 소유감을 느낀다.","{대상}은(는) 나와 밀접하게 연결되어 있다고 느낀다."]}
+ ]},
+ {k:"brand",n:"브랜드",c:[
+  {code:"BA",n:"브랜드 태도",ref:"Mitchell & Olson(1981) 등",items:["나는 {대상}에 호감을 느낀다.","{대상}은(는) 좋은 브랜드이다.","{대상}에 대해 긍정적인 인상을 가지고 있다."]},
+  {code:"BL",n:"브랜드 충성도",ref:"Chaudhuri & Holbrook(2001) 등",items:["다음에도 {대상}을(를) 구매할 것이다.","나는 {대상}에 애착을 느낀다.","다른 브랜드보다 {대상}을(를) 우선 선택한다."]},
+  {code:"BAW",n:"브랜드 인지도",ref:"Yoo, Donthu & Lee(2000) 등",items:["나는 {대상}을(를) 잘 알고 있다.","여러 브랜드 중에서 {대상}을(를) 쉽게 알아볼 수 있다.","{대상}의 특징이 금방 떠오른다."]},
+  {code:"BAU",n:"브랜드 진정성",ref:"Morhart et al.(2015) 등",items:["{대상}은(는) 자신의 정체성을 꾸준히 지키고 있다.","{대상}은(는) 진심으로 소비자를 대한다.","{대상}은(는) 겉모습보다 실속을 중시한다."]}
+ ]},
+ {k:"career",n:"취업·진로",c:[
+  {code:"JSB",n:"구직행동",ref:"Blau(1994) 등",items:["채용 공고와 직업 정보를 찾아본다.","관심 있는 직업이나 기업에 대한 정보를 수집한다.","이력서나 자기소개서를 작성·수정하고 있다.","실제 채용에 지원하거나 면접을 준비한다."]},
+  {code:"CDSE",n:"진로결정 자기효능감",ref:"Betz & Taylor 계열 연구 참고",items:["나는 나에게 맞는 직업을 스스로 선택할 수 있다.","관심 직업에 대한 정보를 찾을 수 있다.","진로 목표를 세우고 계획을 실행할 수 있다.","진로 문제가 생겨도 해결 방법을 찾을 수 있다."]},
+  {code:"CA",n:"진로불안",ref:"진로불안 관련 연구 참고",items:["나의 진로를 생각하면 불안하다.","원하는 곳에 취업하지 못할까 걱정된다.","진로 결정이 늦어지는 것이 초조하다."]},
+  {code:"PSAT",n:"프로그램 만족도",ref:"교육·프로그램 평가 연구 참고",items:["이 프로그램에 전반적으로 만족한다.","프로그램 내용이 나에게 도움이 되었다.","프로그램 운영(일정·방식)이 적절했다.","다른 학생에게 이 프로그램을 추천하겠다."]}
+ ]},
+ {k:"startup",n:"창업",c:[
+  {code:"EI",n:"창업의도",ref:"Liñán & Chen(2009) 등",items:["나는 창업할 준비가 되어 있다.","언젠가 내 사업을 시작할 것이다.","창업을 진지하게 고려하고 있다.","창업을 위해 필요한 노력을 할 생각이다."]},
+  {code:"ESE",n:"창업 자기효능감",ref:"Chen, Greene & Crick(1998) 등",items:["나는 새로운 사업 기회를 찾아낼 수 있다.","사업 계획을 세우고 실행할 수 있다.","필요한 자원(자금·인력)을 확보할 수 있다.","사업 운영에서 생기는 문제를 해결할 수 있다."]},
+  {code:"OR",n:"창업기회 인식",ref:"Ozgen & Baron(2007) 등",items:["나는 시장에서 새로운 사업 기회를 잘 발견한다.","일상에서 사업 아이디어를 자주 떠올린다.","고객의 불편에서 사업 기회를 찾을 수 있다."]},
+  {code:"FB",n:"실패부담감",ref:"Cacciotti et al.(2016) 등",items:["사업에 실패할까 봐 두렵다.","창업 실패는 내 삶에 큰 부담이 될 것 같다.","실패하면 주변의 시선이 걱정된다."]},
+  {code:"ESAT",n:"창업교육 만족도",ref:"교육 만족도 연구 참고",items:["이 교육에 전반적으로 만족한다.","교육 내용이 창업 준비에 실질적으로 도움이 되었다.","강사의 전문성이 높았다.","교육에서 배운 것을 실제로 활용할 수 있다."]}
+ ]}
+];
+DOMAINS.push(DOMAINS.shift());
+const ALL=DOMAINS.flatMap(d=>d.c);
+const DEMO=[
+ {c:"D_GEN",x:"성별을 선택해 주세요.",y:"choice",o:["남성","여성"],on:1},
+ {c:"D_BIRTH",x:"태어난 연도를 4자리 숫자로 적어 주세요. (예: 1995)",y:"text",on:1},
+ {c:"D_AGEG",x:"연령대를 선택해 주세요.",y:"choice",o:["10대","20대","30대","40대","50대","60대 이상"]},
+ {c:"D_EDU",x:"최종 학력을 선택해 주세요.",y:"choice",o:["고졸 이하","전문대 재학·졸업","4년제 재학·졸업","대학원 재학·졸업"]},
+ {c:"D_JOB",x:"현재 직업을 선택해 주세요.",y:"choice",o:["학생","회사원","공무원","자영업","전문직","주부","무직","기타"]},
+ {c:"D_GRADE",x:"현재 학년을 선택해 주세요.",y:"choice",o:["1학년","2학년","3학년","4학년 이상","졸업유예·졸업"]},
+ {c:"D_MAJOR",x:"전공 계열을 선택해 주세요.",y:"choice",o:["인문","사회","경영·경제","자연","공학","예체능","의약","교육","기타"]},
+ {c:"D_INC",x:"월평균 가구 소득을 선택해 주세요.",y:"choice",o:["200만 원 미만","200~400만 원 미만","400~600만 원 미만","600~800만 원 미만","800만 원 이상"]},
+ {c:"D_REG",x:"거주 지역을 선택해 주세요.",y:"choice",o:["서울","경기·인천","강원","충청","전라","경상","제주"]},
+ {c:"D_USE",x:"{대상}을(를) 이용한 기간을 선택해 주세요.",y:"choice",o:["6개월 미만","6개월~1년","1~2년","2~3년","3년 이상"]}
+];
+
+/* ---------- state ---------- */
+let dom="cons",sid=0;
+let S={secs:[],demo:{}};
+const FIELDS=["f_title","f_purpose","f_pi","f_aff","f_mail","f_irb","f_min","f_reward","f_target"];
+function addConstruct(c){
+  if(S.secs.some(s=>s.key===c.code))return;
+  S.secs.push({id:"s"+(++sid),key:c.code,prefix:c.code,name:c.n,title:c.n.replace(/\s*\(.*\)$/,""),ref:c.ref,stim:"",rn:false,items:c.items.map(t=>typeof t==="string"?{text:t,rev:false}:{text:t.t,rev:!!t.r,l:t.l?t.l.slice():null,y:t.y||null})});
+}
+function example(){
+  FIELDS.forEach(k=>$("#"+k).value="");
+  $("#f_pi").value="이시내";$("#f_aff").value="단국대학교";$("#f_mail").value="snlee@dankook.ac.kr";$("#f_min").value="10";
+  S.secs=[];S.demo={D_GEN:true,D_BIRTH:true};S.cdemo=[];
+}
+
+/* ---------- text helpers ---------- */
+function noun(){return $("#f_target").value.trim()||"이 제품·서비스"}
+function fill(t){
+  const n=noun();
+  return t.replace(/\{대상\}(은\(는\)|을\(를\)|이\(가\))?/g,(m,p)=>{
+    if(!p)return n;
+    const last=n.charCodeAt(n.length-1),bat=last>=0xAC00&&last<=0xD7A3&&((last-0xAC00)%28)!==0;
+    return n+({"은(는)":bat?"은":"는","을(를)":bat?"을":"를","이(가)":bat?"이":"가"}[p]);
+  });
+}
+function autoTexts(){
+  const v=k=>$("#"+k).value.trim();
+  if(!$("#f_desc").dataset.touched)$("#f_desc").value=`안녕하십니까.\n저는 ${v("f_aff")||"OO대학교"} ${v("f_pi")||"연구자"}입니다. 본 설문은 「${v("f_title")||"연구 제목"}」에 관한 학술 연구를 위한 것입니다.\n정답이나 오답은 없으니 평소 생각하시는 대로 솔직하게 응답해 주십시오. 응답 내용은 연구 목적으로만 사용됩니다.\n바쁘신 가운데 참여해 주셔서 감사합니다.`;
+  if(!$("#f_consent").dataset.touched)$("#f_consent").value=[
+    `1. 연구 목적: ${v("f_purpose")||"(연구 목적을 입력하세요)"}`,
+    `2. 참여 방법: 약 ${v("f_min")||"10"}분이 걸리는 온라인 설문에 응답합니다.`,
+    `3. 자발적 참여와 중단: 연구 참여는 자발적이며, 응답 중 언제든지 아무런 불이익 없이 중단할 수 있습니다.`,
+    `4. 위험과 이익: 연구 참여로 예상되는 위험은 없습니다.${v("f_reward")?` 응답을 마친 분께는 ${v("f_reward")}을(를) 드립니다.`:""}`,
+    `5. 개인정보와 비밀 보장: 응답은 익명으로 수집되어 통계적으로만 처리되며, 연구 목적 외에는 사용하지 않습니다. 수집된 자료는 연구 종료 후 관련 규정에 따라 보관·파기합니다.`,
+    `6. 문의: 연구책임자 ${v("f_pi")||"(이름)"}${v("f_aff")?`(${v("f_aff")})`:""}${v("f_mail")?`, ${v("f_mail")}`:""}`
+  ].join("\n");
+}
+
+/* ---------- library ---------- */
+function renderLib(){
+  $("#dom").innerHTML=DOMAINS.map(d=>`<button type="button" data-d="${d.k}" class="${d.k===dom?"on":""}" aria-pressed="${d.k===dom}">${d.n}</button>`).join("");
+  $$("#dom button").forEach(b=>b.onclick=()=>{dom=b.dataset.d;renderLib()});
+  const D=DOMAINS.find(d=>d.k===dom);
+  $("#lib").innerHTML=D.c.map(c=>{const used=S.secs.some(s=>s.key===c.code);return `<div class="con">
+    <div class="h"><b>${c.n} <span class="code">${c.code}</span></b><button class="btn ${used?"ghost":""} sm" data-add="${c.code}" ${used?"disabled":""}>${used?"추가됨":"추가"}</button></div>
+    <span class="ref">${esc(c.ref)} · ${c.items.length}문항</span>
+    <details><summary>문항 보기</summary><ol>${c.items.map(t=>typeof t==="string"?`<li>${esc(fill(t))}</li>`:`<li>${esc(fill(t.t))}${t.l?` <span class="hint">[${esc(t.l[0])} ↔ ${esc(t.l[1])}]</span>`:""}${t.r?` <b style="color:var(--red)">R</b>`:""}</li>`).join("")}</ol></details></div>`}).join("");
+  $$("#lib [data-add]").forEach(b=>b.onclick=()=>{addConstruct(ALL.find(c=>c.code===b.dataset.add));renderAll()});
+}
+$("#addCustom").onclick=()=>{
+  const n=$("#customName").value.trim();if(!n){$("#customName").focus();return}
+  let p=($("#customCode").value.trim().toUpperCase().replace(/[^A-Z0-9_]/g,""))||("X"+(sid+1));
+  while(S.secs.some(s=>s.prefix===p))p+="_2";
+  S.secs.push({id:"s"+(++sid),key:"custom_"+sid,prefix:p,name:n,title:n,ref:"직접 작성",stim:"",rn:false,items:[{text:"",rev:false}]});
+  $("#customName").value="";$("#customCode").value="";renderAll();
+};
+
+/* ---------- sections ---------- */
+function renderSecs(){
+  const box=$("#secs");
+  if(!S.secs.length){box.innerHTML=`<div class="card hint">위 라이브러리에서 구성개념을 추가하세요.</div>`;return}
+  box.innerHTML=S.secs.map((s,si)=>`<div class="sec" data-id="${s.id}">
+    <div class="sec-h"><span class="pn">${String(si+1).padStart(2,"0")}</span>
+      <input value="${esc(s.title)}" data-k="title" aria-label="섹션 제목">
+      <span class="row" style="gap:2px"><button class="icon" data-mv="-1" ${si===0?"disabled":""} aria-label="섹션 위로">↑</button><button class="icon" data-mv="1" ${si===S.secs.length-1?"disabled":""} aria-label="섹션 아래로">↓</button><button class="icon" data-rm aria-label="섹션 삭제">✕</button></span>
+    </div>
+    <div class="sec-b">
+      <div class="sec-o"><span><span class="code">${esc(s.prefix)}</span> ${esc(s.name)} · ${esc(s.ref)}</span>
+        <label class="toggle" style="font-size:12.5px"><input type="checkbox" data-k="rn" ${s.rn?"checked":""}> 섹션 안 문항 순서 무작위</label></div>
+      <textarea data-k="stim" rows="2" placeholder="상황 제시 지문 (선택) — 예: 아래 광고를 보신 뒤 응답해 주세요." aria-label="상황 제시 지문">${esc(s.stim)}</textarea>
+      <div class="simg-ed">${s.img?`<img data-pim="${esc(s.img.id)}" alt="섹션 이미지 미리보기"><div class="stack" style="gap:6px"><span class="hint" style="margin:0">응답자가 이 이미지를 보고 아래 문항에 답합니다.</span><div class="row" style="gap:6px"><label class="btn ghost sm" style="cursor:pointer">이미지 바꾸기<input type="file" accept="image/*" data-k="img" hidden></label><button class="btn ghost sm" data-imgdel type="button">이미지 빼기</button></div></div>`:`<label class="btn ghost sm" style="cursor:pointer">+ 평가할 이미지 넣기<input type="file" accept="image/*" data-k="img" hidden></label><span class="hint" data-imsg style="margin:0">광고·제품·패키지 시안 등 (선택)</span>`}</div>
+      <input data-k="vd" value="${esc(s.vd||"")}" placeholder="영상·이미지 링크 (선택) — 유튜브 주소는 재생되고, 이미지 주소는 바로 보입니다" aria-label="영상 또는 자료 링크">
+      ${s.items.map((it,ii)=>`<div class="it" data-i="${ii}"><span class="c">${esc(s.prefix)}${ii+1}${it.rev?"_R":""}</span>
+        <div style="display:flex;flex-direction:column;gap:4px;min-width:0"><input value="${esc(fill(it.text))}" data-ik="text" aria-label="문항">${it.l?`<div class="row" style="gap:6px;flex-wrap:nowrap"><input value="${esc(it.l[0])}" data-ik="l0" aria-label="왼쪽 끝(1점) 표현" style="font-size:12.5px;padding:4px 8px"><span class="hint">↔</span><input value="${esc(it.l[1])}" data-ik="l1" aria-label="오른쪽 끝(7점) 표현" style="font-size:12.5px;padding:4px 8px"></div>`:""}${it.y==="text"?`<span class="hint">숫자·단답 응답</span>`:""}</div>
+        <label class="rev"><input type="checkbox" data-ik="rev" ${it.rev?"checked":""}> 역문항</label>
+        <button class="icon" data-del aria-label="문항 삭제">✕</button></div>`).join("")}
+      <div><button class="btn ghost sm" data-addi>문항 추가</button></div>
+    </div></div>`).join("");
+  $$("#secs .sec").forEach(el=>{
+    const s=S.secs.find(x=>x.id===el.dataset.id);
+    el.querySelector('[data-k="title"]').oninput=e=>{s.title=e.target.value;update()};
+    el.querySelector('[data-k="stim"]').oninput=e=>{s.stim=e.target.value;update()};
+    el.querySelector('[data-k="rn"]').onchange=e=>{s.rn=e.target.checked;update()};
+    el.querySelector('[data-k="vd"]').onchange=e=>{s.vd=e.target.value.trim();update()};
+    el.querySelector('[data-k="img"]').onchange=e=>{const fl=e.target.files[0];if(fl)uploadImg(s,fl,el)};
+    const dl=el.querySelector("[data-imgdel]");if(dl)dl.onclick=()=>{delete s.img;renderAll()};
+    el.querySelectorAll("img[data-pim]").forEach(paintImg);
+    el.querySelectorAll("[data-mv]").forEach(b=>b.onclick=()=>{const i=S.secs.indexOf(s),j=i+ +b.dataset.mv;[S.secs[i],S.secs[j]]=[S.secs[j],S.secs[i]];renderAll()});
+    el.querySelector("[data-rm]").onclick=()=>{S.secs=S.secs.filter(x=>x!==s);renderAll()};
+    el.querySelector("[data-addi]").onclick=()=>{s.items.push({text:"",rev:false});renderAll()};
+    el.querySelectorAll(".it").forEach(r=>{
+      const it=s.items[+r.dataset.i];
+      r.querySelector('[data-ik="text"]').oninput=e=>{it.text=unfill(e.target.value);update()};
+      [0,1].forEach(k=>{const el=r.querySelector('[data-ik="l'+k+'"]');if(el)el.oninput=e=>{it.l[k]=e.target.value;update()}});
+      r.querySelector('[data-ik="rev"]').onchange=e=>{it.rev=e.target.checked;renderAll()};
+      r.querySelector("[data-del]").onclick=()=>{s.items.splice(+r.dataset.i,1);renderAll()};
+    });
+  });
+}
+function unfill(v){
+  const n=noun();if(!n)return v;
+  return v.split(n+"은").join("{대상}은(는)").split(n+"는").join("{대상}은(는)").split(n+"을").join("{대상}을(를)").split(n+"를").join("{대상}을(를)").split(n+"이").join("{대상}이(가)").split(n+"가").join("{대상}이(가)").split(n).join("{대상}");
+}
+function renderAttSel(){
+  const cur=$("#attSec").value;
+  $("#attSec").innerHTML=S.secs.map((s,i)=>`<option value="${s.id}">${i+1}. ${esc(s.title)}</option>`).join("");
+  if(cur&&S.secs.some(s=>s.id===cur))$("#attSec").value=cur;
+  else if(S.secs.length)$("#attSec").value=S.secs[Math.floor((S.secs.length-1)/2)].id;
+}
+function cdCode(){let n=1;const used=new Set((S.cdemo||[]).map(d=>d.c));while(used.has("D_ADD"+n))n++;return "D_ADD"+n}
+function renderCDemo(){
+  const L=S.cdemo||(S.cdemo=[]);const TY={choice:"하나 고르기",checkbox:"여러 개 고르기",text:"직접 적기",file:"파일 첨부 · 사진·한글·PDF, 8MB 이하, 선택 사항"};
+  $("#cdemo").innerHTML=L.map((d,i)=>`<div class="cditem"><div class="top"><input type="checkbox" data-i="${i}" class="cd_on" ${d.on!==false?"checked":""} aria-label="포함"><input type="text" data-i="${i}" class="cd_x" value="${esc(d.x)}" aria-label="문항"><span class="code">${d.c}</span><button class="x" data-i="${i}" title="삭제" aria-label="삭제">✕</button></div>
+    <div class="opts">${TY[d.y]||""}${d.o&&d.o.length?" · "+d.o.map(esc).join(" / "):""}</div></div>`).join("");
+  $$("#cdemo .cd_on").forEach(el=>el.onchange=()=>{L[+el.dataset.i].on=el.checked;update()});
+  $$("#cdemo .cd_x").forEach(el=>el.oninput=()=>{L[+el.dataset.i].x=el.value;update()});
+  $$("#cdemo .x").forEach(el=>el.onclick=()=>{L.splice(+el.dataset.i,1);renderCDemo();update()});
+}
+function renderDemo(){
+  $("#demo").innerHTML=DEMO.map(d=>`<label class="toggle" for="dm_${d.c}"><input type="checkbox" id="dm_${d.c}" ${S.demo[d.c]?"checked":""}> ${esc(fill(d.x).replace(/(을|를) 선택해 주세요\.|(을|를) 숫자로 적어 주세요\.|를 4자리 숫자로 적어 주세요\. \(예: 1995\)/,""))} <span class="code" style="margin-left:auto">${d.c}</span></label>`).join("");
+  DEMO.forEach(d=>$("#dm_"+d.c).onchange=e=>{S.demo[d.c]=e.target.checked;update()});
+  renderCDemo();
+}
+
+/* ---------- build survey ---------- */
+function survey(){
+  const hide=$("#hideNames").checked;
+  const att=$("#attOn").checked?$("#attSec").value:null;
+  const secs=S.secs.map((s,si)=>{
+    const q=s.items.filter(it=>it.text.trim()).map((it,ii)=>({y:it.y||"scale",x:fill(it.text).trim(),r:1,c:`${s.prefix}${ii+1}${it.rev?"_R":""}`,k:s.name,v:it.rev?1:0,l:it.l&&it.l[0]&&it.l[1]?it.l.slice():undefined}));
+    if(att===s.id){q.splice(Math.ceil(q.length/2),0,{y:"scale",x:$("#attText").value.trim(),r:1,c:"ATT1",k:"주의 확인",n:"정답: 4"})}
+    const o={t:hide?`PART ${si+1}`:(s.title||s.name),q};
+    if(s.stim.trim())o.i=s.stim.trim();
+    if(s.img&&s.img.id)o.im=s.img.id;
+    if(s.vd&&/^https?:\/\//i.test(s.vd))o.vd=s.vd;
+    if(s.rn)o.rn=1;
+    return o;
+  }).filter(s=>s.q.length);
+  const demo=DEMO.filter(d=>S.demo[d.c]).concat((S.cdemo||[]).filter(d=>d.on!==false&&d.x.trim())).map(d=>{const o={y:d.y,x:fill(d.x).trim(),r:d.y==="file"?0:1,c:d.c,k:"응답자 정보"};if(d.o&&d.y!=="text"&&d.y!=="file")o.o=d.o.slice();return o});
+  if(demo.length)secs.push({t:hide?`PART ${secs.length+1}`:"응답자 정보",q:demo});
+  secs.forEach(s=>s.q.forEach(q=>{if(!q.v)delete q.v}));
+  const P={m:"r",t:$("#f_title").value.trim()||"연구 설문",d:$("#f_desc").value.trim(),o:[$("#f_aff").value.trim(),$("#f_pi").value.trim()&&("연구책임자 "+$("#f_pi").value.trim())].filter(Boolean).join(" · "),s:secs};
+  if($("#f_useConsent").checked&&$("#f_consent").value.trim())P.c=$("#f_consent").value.trim();
+  if($("#f_irb").value.trim())P.irb=$("#f_irb").value.trim();
+  return P;
+}
+
+/* ---------- preview / codebook ---------- */
+function renderPreview(P){
+  const tot=P.s.reduce((a,s)=>a+s.q.length,0);
+  const scl=P.s.reduce((a,s)=>a+s.q.filter(q=>q.y==="scale").length,0);
+  const rev=P.s.reduce((a,s)=>a+s.q.filter(q=>q.v).length,0);
+  $("#summary").innerHTML=`<span>섹션 <b>${P.s.length}</b></span><span>전체 문항 <b>${tot}</b></span><span>7점 척도 <b>${scl}</b></span><span>역문항 <b>${rev}</b></span><span>예상 소요 <b>${Math.max(1,Math.round(tot*8/60))}분</b></span>`;
+  const qh=(q,no)=>{
+    let b="";
+    if(q.y==="scale")b=`<div class="sc">${[1,2,3,4,5,6,7].map(k=>`<span>${k}</span>`).join("")}</div><div class="ends"><span>1 ${esc(q.l?q.l[0]:"전혀 그렇지 않다")}</span><span>7 ${esc(q.l?q.l[1]:"매우 그렇다")}</span></div>`;
+    else if(q.y==="file")b=`<div class="op" style="border-style:dashed">📎 파일 선택 (사진·한글·PDF, 8MB 이하)</div>`;
+    else if(q.o)b=q.o.map(o=>`<div class="op">${esc(o)}</div>`).join("");
+    else b=`<div class="ln"></div>`;
+    return `<div class="c"><p class="t">${no}. ${esc(q.x)} ${q.r===0?"":'<span class="req">*</span>'}<span class="tag">${esc(q.c)}</span></p>${b}</div>`;
+  };
+  $("#pv").innerHTML=`<div class="c cover"><img src="${LOGO||DEFAULT_LOGO}" alt="" style="height:28px;max-width:170px;object-fit:contain;display:block;margin-bottom:8px">${P.o?`<p class="org">${esc(P.o)}</p>`:""}<h3>${esc(P.t)}</h3><p class="d">${esc(P.d)}</p>${P.irb?`<p class="d" style="font-size:11.5px;margin-top:6px">IRB 승인번호 ${esc(P.irb)}</p>`:""}</div>`+
+    (P.c?`<div class="sb">연구 참여 동의서</div><div class="c" style="border-radius:0 0 10px 10px;margin-top:-10px"><p class="d" style="color:#17213a">${esc(P.c)}</p></div><div class="c"><p class="t">위 내용을 읽고 이해하였으며, 연구에 참여하는 데 동의하십니까? <span class="req">*</span></p><div class="op">네, 동의합니다.</div><div class="op">아니요, 동의하지 않습니다.</div></div>`:"")+
+    P.s.map((s,si)=>`<div class="sb">${si+1}. ${esc(s.t)}${s.rn?' <span style="font-weight:400;font-size:11.5px;opacity:.8">· 순서 무작위</span>':""}</div><div class="sd">이어서 아래 ${s.q.length}개의 질문에 응답하여 주세요.</div>${s.i?`<div class="stim">${esc(s.i)}</div>`:""}${s.vd?vidHTML(s.vd,esc):""}${s.im?`<div class="pv-img"><img data-pim="${esc(s.im)}" alt="평가 자료 이미지"></div>`:""}${s.q.map((q,i)=>qh(q,i+1)).join("")}`).join("");
+  setTimeout(()=>document.querySelectorAll("#pv img[data-pim],.pv img[data-pim]").forEach(paintImg),0);
+}
+let cbRows=[];
+function renderCodebook(P){
+  const TY={scale:"1~7점",choice:"단일선택",checkbox:"복수선택",text:"단답",paragraph:"서술",file:"파일첨부"};
+  cbRows=[];
+  if(P.c)cbRows.push(["CONSENT","동의서","연구 참여 동의","","","",""]);
+  P.s.forEach((s,si)=>s.q.forEach(q=>cbRows.push([q.c,`${si+1}. ${s.t}`,q.x,q.k||"",q.v?"역문항":"",q.n||(q.o?q.o.join(" / "):"")||(q.l?`1=${q.l[0]}, 7=${q.l[1]}`:""),TY[q.y]||q.y])));
+  cbRows.push(["DURATION","","응답 소요 시간(초)","","","","숫자"]);
+  $("#cb").innerHTML=`<thead><tr><th>변수명</th><th>구성개념</th><th>문항</th><th>역문항</th><th>비고</th></tr></thead><tbody>${cbRows.map(r=>`<tr><td class="m">${esc(r[0])}</td><td>${esc(r[3])}</td><td>${esc(r[2])}</td><td>${r[4]?'<b style="color:var(--red)">R</b>':""}</td><td>${esc(r[5])}</td></tr>`).join("")}</tbody>`;
+}
+$("#copyCb").onclick=async()=>{
+  const tsv=[["변수명","섹션","문항","구성개념","역문항","비고","응답 형식"],...cbRows].map(r=>r.map(c=>String(c).replace(/\t|\n/g," ")).join("\t")).join("\n");
+  try{await navigator.clipboard.writeText(tsv);$("#cbStatus").textContent="복사했습니다. 엑셀이나 구글 시트에 붙여 넣으면 표로 들어갑니다."}
+  catch(e){$("#cbStatus").textContent="자동 복사가 막혔습니다. 표를 드래그해서 복사해 주세요."}
+};
+
+/* ---------- link ---------- */
+function b64url(u8){let b="";for(let i=0;i<u8.length;i++)b+=String.fromCharCode(u8[i]);return btoa(b).replace(/\+/g,"-").replace(/\//g,"_").replace(/=+$/,"")}
+async function encode(obj){
+  const json=JSON.stringify(obj);
+  if(typeof CompressionStream==="function"){
+    const cs=new CompressionStream("deflate-raw");
+    const buf=await new Response(new Blob([json]).stream().pipeThrough(cs)).arrayBuffer();
+    return "z"+b64url(new Uint8Array(buf));
+  }
+  return "j"+b64url(new TextEncoder().encode(json));
+}
+function hash6(str){let h=2166136261;for(let i=0;i<str.length;i++){h^=str.charCodeAt(i);h=Math.imul(h,16777619)}return (h>>>0).toString(36).slice(0,6).padStart(6,"0")}
+let seq=0,qrT=null;
+async function makeLink(P){
+  const my=++seq;
+  const ep=$("#endpoint").value.trim();
+  const ok=/^https:\/\/script\.google\.com\/macros\/s\/[^/]+\/exec$/.test(ep);
+  $("#epStatus").textContent=!ep?"응답 수집 주소가 비어 있습니다. 아래 ‘처음 한 번만’ 안내대로 연결해 주세요.":ok?"응답이 연결된 구글 시트로 모입니다.":"주소 형식을 확인해 주세요. https://script.google.com/macros/s/…/exec 형태여야 합니다.";
+  $("#epStatus").className="status"+(ok?"":" err");
+  
+  const now=new Date(),ymd=String(now.getFullYear()).slice(2)+String(now.getMonth()+1).padStart(2,"0")+String(now.getDate()).padStart(2,"0");
+  const body={...P,id:"R"+ymd+"-"+hash6(JSON.stringify(P))};
+  if(THEME&&THEME!=="#0E2A6B")body.th=THEME;
+  if(ep)body.e=ep;
+  const h=await encode(body);if(my!==seq)return;
+  if(!LAST||LAST.id!==body.id)shortReset();LAST=body;
+  const url=($("#base").value.trim()||BASE_DEFAULT).replace(/#.*$/,"")+"#"+h;
+  $("#link").value=url;$("#openLink").href=url;
+  $("#linkStatus").textContent=`설문 ID ${body.id} · 링크 ${url.length.toLocaleString()}자`;
+  
+}
+
+/* ---------- wiring ---------- */
+function update(){const P=survey();renderPreview(P);applyPv();renderCodebook(P);makeLink(P);renderAttSel()}
+function renderAll(){renderLib();renderSecs();renderDemo();renderAttSel();update()}
+FIELDS.forEach(k=>$("#"+k).addEventListener("input",()=>{autoTexts();if(k==="f_target")renderAll();else update()}));
+["f_desc","f_consent"].forEach(k=>$("#"+k).addEventListener("input",()=>{$("#"+k).dataset.touched=1;update()}));
+["#f_useConsent","#hideNames","#attOn","#attSec"].forEach(s=>$(s).addEventListener("change",update));
+$("#attText").addEventListener("input",update);
+$("#newStudy").onclick=()=>{
+  FIELDS.forEach(k=>$("#"+k).value="");
+  $("#f_pi").value="이시내";$("#f_aff").value="단국대학교";$("#f_mail").value="snlee@dankook.ac.kr";$("#f_min").value="10";
+  delete $("#f_desc").dataset.touched;delete $("#f_consent").dataset.touched;
+  S.secs=[];S.demo={D_GEN:true,D_BIRTH:true};S.cdemo=[];autoTexts();renderAll();
+};
+$$(".tabs button").forEach(b=>b.onclick=()=>{
+  $$(".tabs button").forEach(x=>x.classList.toggle("on",x===b));
+  ["pv","cb","ln"].forEach(t=>$("#pane-"+t).hidden=b.dataset.tab!==t);
+});
+$("#code").textContent=GAS;
+$("#endpoint").value="https://script.google.com/macros/s/AKfycbwHLcYk15dyBXeeLEnEEpRsL7YkopAPLkYKfLNn-JXHk2vuBJ8MTlpL544NSbZxnwc1FA/exec";$("#base").value=BASE_DEFAULT;
+$("#endpoint").addEventListener("input",()=>{mem.set("rsb_endpoint",$("#endpoint").value.trim());update()});
+$("#base").addEventListener("input",()=>{mem.set("rsb_base",$("#base").value.trim());update()});
+$("#copyLink").onclick=async()=>{try{await navigator.clipboard.writeText($("#link").value);$("#linkStatus").textContent="링크를 복사했습니다."}catch(e){$("#link").select();$("#linkStatus").textContent="자동 복사가 막혀 링크를 선택해 두었습니다. Ctrl+C(⌘+C)로 복사하세요."}};
+$("#copy").onclick=async()=>{try{await navigator.clipboard.writeText(GAS);$("#copyStatus").textContent="복사했습니다."}catch(e){const r=document.createRange();r.selectNodeContents($("#code"));const s=getSelection();s.removeAllRanges();s.addRange(r);$("#copyStatus").textContent="코드를 선택해 두었습니다. Ctrl+C(⌘+C)로 복사하세요."}};
+
+
+/* ---------- 디자인: 대표 색·로고 ---------- */
+var DEFAULT_LOGO="data:image/png;base64,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";
+var SWATCH=[["#0E2A6B","남색(기본)"],["#004898","블루"],["#00796B","청록"],["#2E7D32","그린"],["#C2185B","로즈"],["#E65100","오렌지"],["#5E35B1","퍼플"],["#37474F","차콜"]];
+var THEME=(mem.get("rsb_th")||"#0E2A6B").toUpperCase(), LOGO=mem.get("rsb_lg")||"";
+function dMix(h,t){const n=parseInt(h.slice(1),16),c=[n>>16&255,n>>8&255,n&255].map(v=>Math.round(v+(255-v)*t));return "#"+c.map(v=>v.toString(16).padStart(2,"0")).join("")}
+function dLum(h){const n=parseInt(h.slice(1),16);const c=[n>>16&255,n>>8&255,n&255].map(v=>{v/=255;return v<=.03928?v/12.92:Math.pow((v+.055)/1.055,2.4)});return .2126*c[0]+.7152*c[1]+.0722*c[2]}
+function themeOn(){return dLum(THEME)>.45?"#17213a":"#fff"}
+function applyPv(){
+  const pv=$("#pv");if(!pv)return;
+  pv.style.setProperty("--navy",THEME);pv.style.setProperty("--on",themeOn());pv.style.setProperty("--soft",dMix(THEME,.86));
+  pv.style.setProperty("--pvc",THEME);pv.style.setProperty("--pvon",themeOn());pv.style.setProperty("--pvs",dMix(THEME,.86));
+}
+function renderDesign(){
+  $("#swatches").innerHTML=SWATCH.map(([c,n])=>`<button type="button" style="background:${c}" data-c="${c}" title="${n}" aria-label="${n}" aria-pressed="${c===THEME}"></button>`).join("");
+  $$("#swatches button").forEach(b=>b.onclick=()=>setTheme(b.dataset.c));
+  $("#thPick").value=THEME.toLowerCase();
+  $("#logoPv").src=LOGO||DEFAULT_LOGO;
+  $("#logoReset").hidden=!LOGO;
+}
+function setTheme(c){THEME=c.toUpperCase();mem.set("rsb_th",THEME);renderDesign();update()}
+$("#thPick").addEventListener("input",e=>setTheme(e.target.value));
+$("#logoBtn").onclick=()=>$("#logoFile").click();
+$("#logoReset").onclick=()=>{LOGO="";mem.set("rsb_lg","");renderDesign();update()};
+function shrinkLogo(file){return new Promise((res,rej)=>{const img=new Image();img.onload=()=>{let h=96,w=Math.round(img.width*h/img.height);if(w>400){w=400;h=Math.round(img.height*w/img.width)}
+  const c=document.createElement("canvas");c.width=w;c.height=h;const x=c.getContext("2d");x.drawImage(img,0,0,w,h);
+  let d=c.toDataURL("image/webp",.85);if(!d.startsWith("data:image/webp")||d.length>16000)d=c.toDataURL("image/png");
+  if(d.length>16000){x.globalCompositeOperation="destination-over";x.fillStyle="#fff";x.fillRect(0,0,w,h);d=c.toDataURL("image/jpeg",.82)}
+  URL.revokeObjectURL(img.src);res(d)};img.onerror=()=>rej(new Error("이미지를 읽지 못했습니다."));img.src=URL.createObjectURL(file)})}
+$("#logoFile").onchange=async e=>{const f=e.target.files[0];if(!f)return;
+  try{LOGO=await shrinkLogo(f);mem.set("rsb_lg",LOGO);$("#logoNote").innerHTML="로고를 바꿨습니다. 올린 로고는 <b>짧은 링크</b>로 만든 설문에 표시됩니다."}
+  catch(err){$("#logoNote").textContent="로고를 읽지 못했습니다. PNG·JPG 파일로 다시 올려 주세요."}
+  e.target.value="";renderDesign();update()};
+renderDesign();
+example();autoTexts();renderAll();
+/* ---------- 짧은 링크 (홈페이지 빌더 전용) ---------- */
+let LAST=null;
+function shortReset(){const o=document.getElementById("shortOut");if(o)o.hidden=true;const st=document.getElementById("shortStatus");if(st){st.textContent="";st.className="status"}}
+document.getElementById("mkShort").onclick=async()=>{
+  const st=document.getElementById("shortStatus"),btn=document.getElementById("mkShort");
+  const ep=document.getElementById("endpoint").value.trim();
+  if(!LAST||!ep){st.textContent="응답 수집 주소가 필요합니다.";st.className="status err";return}
+  let slug=(document.getElementById("slug").value.trim()||LAST.id).toLowerCase();
+  if(!/^[a-z0-9][a-z0-9-]{2,39}$/.test(slug)){st.textContent="영문 소문자·숫자·하이픈으로 3~40자를 써 주세요. 첫 글자는 하이픈이 될 수 없습니다.";st.className="status err";return}
+  btn.disabled=true;st.className="status";st.textContent="등록하는 중…";
+  const body=LOGO?{...LAST,lg:LOGO}:LAST;
+  let keys={};try{keys=JSON.parse(mem.get("rsb_keys")||"{}")}catch(e){}
+  const rkey=keys[slug]||(keys[slug]=Math.random().toString(36).slice(2,8)+Math.random().toString(36).slice(2,8));
+  mem.set("rsb_keys",JSON.stringify(keys));
+  try{
+    await fetch(ep,{method:"POST",mode:"no-cors",headers:{"Content-Type":"text/plain;charset=utf-8"},body:JSON.stringify({action:"register",slug,survey:body,key:rkey,bs:getState()})});
+    const j=await (await fetch(ep+"?id="+encodeURIComponent(slug))).json();
+    if(j.ok&&j.survey&&j.survey.id===body.id){
+      const url=(document.getElementById("base").value.trim()||"https://sabsci-lab.com/survey").replace(/#.*$/,"")+"#"+slug;
+      document.getElementById("shortLink").value=url;document.getElementById("openShort").href=url;
+      document.getElementById("shortOut").hidden=false;st.textContent="짧은 링크가 만들어졌습니다.";
+      const rurl=url.replace(/\/survey#.*$/,"/report#")+slug+"."+rkey;
+      document.getElementById("reportLink").value=rurl;document.getElementById("openReport").href=rurl;
+      const box=document.getElementById("qr");box.innerHTML="";box.style.display="";
+      if(typeof QRCode==="function")new QRCode(box,{text:url,width:220,height:220,colorDark:"#0e2a6b",colorLight:"#ffffff",correctLevel:QRCode.CorrectLevel.M});
+    }else if(j.ok){st.textContent="이미 다른 설문이 쓰고 있는 이름입니다. 다른 이름을 써 주세요.";st.className="status err"}
+    else{st.textContent="등록하지 못했습니다. 수집 코드가 최신 버전으로 배포됐는지 확인해 주세요.";st.className="status err"}
+  }catch(e){st.textContent="연결하지 못했습니다. 인터넷 연결을 확인한 뒤 다시 눌러 주세요.";st.className="status err"}
+  btn.disabled=false;
+};
+document.getElementById("copyReport").onclick=async()=>{try{await navigator.clipboard.writeText(document.getElementById("reportLink").value);document.getElementById("shortStatus").textContent="보고서 링크를 복사했습니다."}catch(e){document.getElementById("reportLink").select()}};
+document.getElementById("dlQR").onclick=()=>{const box=document.getElementById("qr"),c=box.querySelector("canvas"),im=box.querySelector("img");const src=c?c.toDataURL("image/png"):(im&&im.src);if(!src)return;const pad=document.createElement("canvas"),W=600;pad.width=pad.height=W;const g=pad.getContext("2d");g.fillStyle="#fff";g.fillRect(0,0,W,W);const i=new Image();i.onload=()=>{g.imageSmoothingEnabled=false;g.drawImage(i,40,40,W-80,W-80);const a=document.createElement("a");a.href=pad.toDataURL("image/png");a.download="QR_"+(document.getElementById("shortLink").value.split("#")[1]||"survey")+".png";a.click()};i.src=src};
+document.getElementById("copyShort").onclick=async()=>{try{await navigator.clipboard.writeText(document.getElementById("shortLink").value);document.getElementById("shortStatus").textContent="짧은 링크를 복사했습니다."}catch(e){document.getElementById("shortLink").select()}};
+
+/* ---------- 섹션 영상 ---------- */
+function vidEmbed(u){u=String(u||"").trim();let m;
+  if(m=u.match(/(?:youtu\.be\/|youtube\.com\/(?:watch\?(?:.*&)?v=|shorts\/|embed\/|live\/))([\w-]{11})/))return "https://www.youtube-nocookie.com/embed/"+m[1]+"?rel=0&playsinline=1";
+  if(m=u.match(/vimeo\.com\/(?:video\/)?(\d+)/))return "https://player.vimeo.com/video/"+m[1];
+  if(m=u.match(/drive\.google\.com\/file\/d\/([\w-]+)/))return "https://drive.google.com/file/d/"+m[1]+"/preview";
+  return "";}
+function vidHTML(u,esc){const e=vidEmbed(u);if(e)return `<div class="vwrap"><iframe src="${e}" title="평가 자료 영상" allow="accelerometer; autoplay; encrypted-media; picture-in-picture; fullscreen" allowfullscreen loading="lazy"></iframe></div>`;
+  if(/^https?:\/\//i.test(u))return `<figure class="simg pv-img"><img data-lim="${esc(u)}" src="${esc(u)}" alt="평가 자료 이미지" referrerpolicy="no-referrer"></figure>`;return "";}
+document.addEventListener("error",e=>{const t=e.target;if(t&&t.matches&&t.matches("img[data-lim]")){const a=document.createElement("a");a.className="vlink";a.href=t.dataset.lim;a.target="_blank";a.rel="noopener";a.textContent="자료 열기 (새 창) ↗";(t.closest("figure")||t).replaceWith(a)}},true);
+document.addEventListener("click",e=>{const t=e.target;if(t&&t.matches&&t.matches(".simg img[data-lim]")&&!document.querySelector(".pv")&&!document.getElementById("pv")){const v=document.createElement("div");v.className="zoomv";v.innerHTML='<img alt="">';v.firstChild.src=t.src;v.onclick=()=>v.remove();document.body.appendChild(v)}});
+/* ---------- 섹션 이미지 ---------- */
+var IMGC={};
+function epURL(){return $("#endpoint").value.trim()}
+async function getImg(id){
+  if(IMGC[id])return IMGC[id];
+  const p=fetch(epURL()+"?img="+encodeURIComponent(id)).then(r=>r.json()).then(j=>{if(!j.ok)throw 0;IMGC[id]=j.data;return j.data}).catch(()=>{delete IMGC[id];return ""});
+  IMGC[id]=p;return p;
+}
+function paintImg(img){const id=img.dataset.pim;Promise.resolve(getImg(id)).then(d=>{if(d)img.src=d})}
+function shrinkImg(file){return new Promise((res,rej)=>{const fr=new FileReader();fr.onload=()=>{const im=new Image();im.onload=()=>{
+  let q=.85,W=1400;const go=()=>{const k=Math.min(1,W/Math.max(im.width,im.height));const c=document.createElement("canvas");c.width=Math.round(im.width*k);c.height=Math.round(im.height*k);
+    const g=c.getContext("2d");g.fillStyle="#fff";g.fillRect(0,0,c.width,c.height);g.drawImage(im,0,0,c.width,c.height);const d=c.toDataURL("image/jpeg",q);
+    if(d.length>600000&&W>600){W-=200;q=Math.max(.7,q-.05);return go()}res(d)};go()};im.onerror=rej;im.src=fr.result};fr.onerror=rej;fr.readAsDataURL(file)})}
+async function uploadImg(sec,file,el){
+  const msg=el.querySelector("[data-imsg]")||el.querySelector(".simg-ed .hint");
+  const say=(t,bad)=>{if(msg){msg.textContent=t;msg.style.color=bad?"#c0392b":""}};
+  if(!/^image\//.test(file.type)){say("이미지 파일만 넣을 수 있습니다.",1);return}
+  say("이미지를 올리는 중…");
+  try{
+    const d=await shrinkImg(file);
+    const id=(Date.now().toString(36)+Math.random().toString(36).slice(2,8)).toLowerCase().replace(/[^a-z0-9]/g,"").slice(0,20);
+    await fetch(epURL(),{method:"POST",mode:"no-cors",headers:{"Content-Type":"text/plain;charset=utf-8"},body:JSON.stringify({action:"img",id,data:d})});
+    const j=await (await fetch(epURL()+"?img="+id)).json();
+    if(!j.ok||j.data!==d)throw new Error(j.error||"x");
+    IMGC[id]=d;sec.img={id};renderAll();
+  }catch(e){say("이미지를 올리지 못했습니다. 수집 코드가 최신 버전인지 확인해 주세요.",1)}
+}
+
+/* ---------- 응답자 정보 직접 추가 ---------- */
+(function(){const y=$("#cd_y"),o=$("#cd_o"),msg=$("#cd_msg");
+  y.onchange=()=>{o.hidden=y.value==="text"||y.value==="file"};
+  $("#cd_add").onclick=()=>{const x=$("#cd_x").value.trim();msg.textContent="";msg.style.color="";
+    if(!x){msg.textContent="문항을 적어 주세요.";msg.style.color="#c0392b";return}
+    const opts=o.value.split(/[,，\n]/).map(t=>t.trim()).filter(Boolean);
+    if(y.value!=="text"&&y.value!=="file"&&opts.length<2){msg.textContent="선택지를 2개 이상 쉼표로 나눠 적어 주세요.";msg.style.color="#c0392b";return}
+    (S.cdemo||(S.cdemo=[])).push({c:cdCode(),x,y:y.value,o:(y.value==="text"||y.value==="file")?undefined:opts,on:true});
+    $("#cd_x").value="";o.value="";renderCDemo();update();msg.textContent="추가했습니다.";}
+})();
+/* ---------- 상태 저장·불러오기 (내 설문함) ---------- */
+function getState(){const f={};FIELDS.concat(["f_desc","f_consent","attText"]).forEach(k=>f[k]=$("#"+k).value);
+  return {v:1,tool:"research",S,sid,f,touched:{desc:!!$("#f_desc").dataset.touched,consent:!!$("#f_consent").dataset.touched},
+    ck:{useConsent:$("#f_useConsent").checked,hideNames:$("#hideNames").checked,attOn:$("#attOn").checked},attSecIdx:S.secs.findIndex(s=>s.id===$("#attSec").value),THEME}}
+function setState(st){
+  if(!st||st.tool!=="research")return false;
+  S=st.S||S;sid=Math.max(sid,st.sid||0);
+  Object.entries(st.f||{}).forEach(([k,v])=>{const el=$("#"+k);if(el)el.value=v});
+  if(st.touched&&st.touched.desc)$("#f_desc").dataset.touched=1;else delete $("#f_desc").dataset.touched;
+  if(st.touched&&st.touched.consent)$("#f_consent").dataset.touched=1;else delete $("#f_consent").dataset.touched;
+  const ck=st.ck||{};$("#f_useConsent").checked=ck.useConsent!==false;$("#hideNames").checked=!!ck.hideNames;$("#attOn").checked=ck.attOn!==false;
+  if(st.THEME){THEME=st.THEME;mem.set("rsb_th",THEME)}
+  autoTexts();renderAll();
+  if(st.attSecIdx>=0&&S.secs[st.attSecIdx]){$("#attSec").value=S.secs[st.attSecIdx].id;update()}
+  renderDesign();return true;
+}
+
+(function(){
+  let raw=null;try{raw=localStorage.getItem("sabsci_load");localStorage.removeItem("sabsci_load")}catch(e){}
+  if(!raw)return;
+  try{const pkt=JSON.parse(raw);
+    if(pkt.logo){LOGO=pkt.logo;mem.set("rsb_lg",LOGO)}else{LOGO="";mem.set("rsb_lg","")}
+    if(setState(pkt.state)){
+      const bar=document.createElement("div");bar.className="wrap";bar.innerHTML=`<div style="margin-top:14px;background:var(--soft);border:1px solid var(--line);border-radius:10px;padding:10px 14px;font-size:13.5px;color:var(--ink)">내 설문함에서 <b>${esc(pkt.title||pkt.slug||"")}</b>을(를) 불러왔습니다. 문항을 고친 뒤 <b>새 짧은 링크</b>로 만들면 새 설문으로 저장되고, 응답도 새 탭에 따로 모입니다.</div>`;
+      document.querySelector("header").after(bar);
+      renderDesign();update();
+    }
+  }catch(e){}
+})();
+
+})();
+</script>
+</body>
+</html>
